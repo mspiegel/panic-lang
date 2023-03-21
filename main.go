@@ -7,44 +7,32 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-// https://www.it.uu.se/katalog/aleji304/CompilersProject/uc.html
-//
-// program         ::= topdec_list
-// topdec_list     ::= /empty/ | topdec topdec_list
-// topdec          ::= vardec ";"
-//                  | funtype ident "(" formals ")" funbody
-// vardec          ::= scalardec | arraydec
-// scalardec       ::= typename ident
-// arraydec        ::= typename ident "[" intconst "]"
-// typename        ::= "int" | "char"
-// funtype         ::= typename | "void"
-// funbody         ::= "{" locals stmts "}" | ";"
-// formals         ::= "void" | formal_list
-// formal_list     ::= formaldec | formaldec "," formal_list
-// formaldec       ::= scalardec | typename ident "[" "]"
-// locals          ::= /empty/ | vardec ";" locals
-// stmts           ::= /empty/ | stmt stmts
-// stmt            ::= expr ";"
-//                  | "return" expr ";" | "return" ";"
-//                  | "while" condition stmt
-//                  | "if" condition stmt else_part
-//                  | "{" stmts "}"
-//                  | ";"
-// else_part       ::= /empty/ | "else" stmt
-// condition       ::= "(" expr ")"
-// expr            ::= intconst
-//                  | ident | ident "[" expr "]"
-//                  | unop expr
-//                  | expr binop expr
-//                  | ident "(" actuals ")"
-//                  | "(" expr ")"
-// unop            ::= "-" | "!"
-// binop           ::= "+" | "-" | "*" | "/"
-//                  | "<" | ">" | "<=" | ">=" | "!=" | "=="
-//                  | "&&"
-//                  | "="
-// actuals         ::= /empty/ | expr_list
-// expr_list       ::= expr | expr "," expr_list
+// program         ::= topdec*
+// topdec          ::= function
+// function        ::= "fn" ident "(" funcParams? ")" "->" typename blockExpr
+// typename        ::= "i32" | "bool" | "()"
+// funcParams      ::= funcParam ("," funcParam)* ","?
+// funcParam       ::= ident ":" typename
+// blockExpr       ::= "{" stmts "}"
+// stmts           ::= stmt+ exprWoutBlock?
+//                  | exprWoutBlock
+// stmt            ::= ";" | letStmt | exprStmt
+// letStmt         ::=
+// exprStmt        ::= exprWoutBlock ";"
+//                  | exprWithBlock ";"?
+// expr            ::= exprWoutBlock | exprWithBlock
+// exprWoutBlock   ::= literalExpr
+//                  | pathExpr
+//                  | operExpr
+//                  | retExpr
+// literalExpr     ::= INTEGER_LITERAL
+//                  | "true" | "false"
+//                  | "()" <-- see Rust 'TupleExpression'
+// pathExpr        ::= ident
+// operExpr        ::=
+// retExpr         ::= "return" expr
+// exprWithBlock   ::= blockExpr | ifExpr
+// ifExpr          ::= "if" expr blockExpr ("else" (blockExpr | ifExpr) )?
 
 type Program struct {
 	Pos lexer.Position
