@@ -1,0 +1,37 @@
+WHITESPACE    =  _{ " " | "\t" | NEWLINE }
+
+program       =   { SOI ~ topdecl* ~ EOI }
+topdecl       =   { function }
+function      =   { "fn" ~ ident ~ "(" ~ funcParams? ~ ")" ~ "->" ~ typename ~ stmtBlock }
+typename      =   { "i32" | "bool" | "()" }
+funcParams    =   { funcParam ~ ("," ~ funcParam)* ~ ","? }
+funcParam     =   { ident ~ ":" ~ typename }
+stmtBlock     =   { "{" ~ stmt+ ~ "}" }
+
+stmt          =   { ";" ~ letStmt ~ returnStmt ~ ifStmt ~ exprStmt }
+letStmt       =   { "let" ~ ident ~ ":" ~ typename ~ "=" ~ expr ~ ";" }
+exprStmt      =   { expr ~ ";" }
+returnStmt    =   { "return" ~ expr ~ ";" }
+ifStmt        =   { "if" ~ expr ~ stmtBlock ~ ( "else" ~ ( stmtBlock | ifStmt ) )? }
+
+expr          =   { operExpr }
+operExpr      =  _{ prefix* ~ term ~ (infix ~ prefix* ~ term )* }
+
+infix         =  _{ add | sub | mul | div }
+add           =   { "+" } // Addition
+sub           =   { "-" } // Subtraction
+mul           =   { "*" } // Multiplication
+div           =   { "/" } // Division
+rem           =   { "%" } // Remainder
+
+prefix        =  _{ neg }
+neg           =   { "-" } // Negation
+
+term          =  _{ compareExpr | funcCall | primary }
+funcCall      =   { ident ~ "(" ~ callParams? ~ ")" }
+callParams    =   { expr ~ ("," ~ expr)* ~ ","? }
+compareExpr   =   { primary ~ ( "<" | "<=" | "==" | ">=" | ">" ) ~ primary }
+primary       =  _{ literal | ident | "(" ~ expr ~ ")" }
+literal       =   { intLiteral | "true" | "false" | "()" }
+intLiteral    =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
+ident         =  @{ XID_START ~ XID_CONTINUE* }
