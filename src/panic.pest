@@ -3,35 +3,59 @@ WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 program       =   { SOI ~ topdecl* ~ EOI }
 topdecl       =   { function }
 function      =   { "fn" ~ ident ~ "(" ~ funcParams? ~ ")" ~ "->" ~ typename ~ stmtBlock }
-typename      =   { "i32" | "bool" | "()" }
+typename      =   { typei32 | typebool | typeunit }
+typei32       =   { "i32" }
+typebool      =   { "bool" }
+typeunit      =   { "()" }
 funcParams    =   { funcParam ~ ("," ~ funcParam)* ~ ","? }
 funcParam     =   { ident ~ ":" ~ typename }
 stmtBlock     =   { "{" ~ stmt+ ~ "}" }
 
-stmt          =   { ";" ~ letStmt ~ returnStmt ~ ifStmt ~ exprStmt }
+stmt          =   { ";" | macroStmt | letStmt | returnStmt | ifStmt | exprStmt }
 letStmt       =   { "let" ~ ident ~ ":" ~ typename ~ "=" ~ expr ~ ";" }
 exprStmt      =   { expr ~ ";" }
 returnStmt    =   { "return" ~ expr ~ ";" }
 ifStmt        =   { "if" ~ expr ~ stmtBlock ~ ( "else" ~ ( stmtBlock | ifStmt ) )? }
 
-expr          =   { operExpr }
-operExpr      =  _{ prefix* ~ term ~ (infix ~ prefix* ~ term )* }
+expr          =   { compare }
+compare       =   { addsub ~ ( ( lt | le | eq | ne | ge | gt ) ~ addsub )? }
+addsub        =   { muldiv ~ ( ( add | sub ) ~ muldiv )* }
+muldiv        =   { unary ~ ( ( mul | div | mod ) ~ unary )* }
+unary         =   { ( negative )* ~ term }
+term          =   { funcCall | primary }
 
-infix         =  _{ add | sub | mul | div }
-add           =   { "+" } // Addition
-sub           =   { "-" } // Subtraction
-mul           =   { "*" } // Multiplication
-div           =   { "/" } // Division
-rem           =   { "%" } // Remainder
+lt            =   { "<"  }
+le            =   { "<=" }
+eq            =   { "==" }
+ne            =   { "!=" }
+ge            =   { ">=" }
+gt            =   { ">"  }
+add           =   { "+"  }
+sub           =   { "-"  }
+mul           =   { "*"  }
+div           =   { "/"  }
+mod           =   { "%"  }
+negative      =   { "-"  }
 
-prefix        =  _{ neg }
-neg           =   { "-" } // Negation
-
-term          =  _{ compareExpr | funcCall | primary }
 funcCall      =   { ident ~ "(" ~ callParams? ~ ")" }
 callParams    =   { expr ~ ("," ~ expr)* ~ ","? }
-compareExpr   =   { primary ~ ( "<" | "<=" | "==" | ">=" | ">" ) ~ primary }
-primary       =  _{ literal | ident | "(" ~ expr ~ ")" }
-literal       =   { intLiteral | "true" | "false" | "()" }
+primary       =   { ident | literal | paren }
+paren         =   { "(" ~ expr ~ ")" }
+ident         =   { !keyword ~ anyIdent }
+literal       =   { intLiteral | truelit | falselit | unitlit }
+truelit       =   { "true"  }
+falselit      =   { "false" }
+unitlit       =   { "()"    }
+
 intLiteral    =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
-ident         =  @{ XID_START ~ XID_CONTINUE* }
+anyIdent      =  @{ XID_START ~ XID_CONTINUE* }
+keyword       =  @{ "fn" | "i32" | "bool" | "let" | "return" | "if" | "else" | "true" | "false" }
+
+macroStmt     =   { macroIdent ~ "(" ~ macroParams? ~ ")" ~ ";" }
+macroParams   =   { macroExpr ~ ("," ~ macroExpr)* ~ ","? }
+macroExpr     =   { compare | strLiteral }
+strLiteral    =  @{ "\"" ~ strInner ~ "\"" }
+strInner      =  @{ (!("\"" | "\\") ~ ANY)* ~ (strEscape ~ strInner)? }
+strEscape     =  @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" ) }
+macroIdent    =  @{ XID_START ~ XID_CONTINUE* ~ "!" }
+
