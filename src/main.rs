@@ -64,8 +64,9 @@ fn parseFunction(pair: Pair<Rule>) -> Function {
         match inner.as_rule() {
             Rule::ident => name = inner.as_str().to_string(),
             Rule::stmtBlock => body = inner.as_str().to_string(),
+            Rule::typename => typ = parseTypeName(inner),
             _ => (),
-        }
+        };
     }
     return Function {
         name,
@@ -73,6 +74,17 @@ fn parseFunction(pair: Pair<Rule>) -> Function {
         typ,
         body,
     };
+}
+
+fn parseTypeName(pair: Pair<Rule>) -> TypeName {
+    assert_eq!(pair.as_rule(), Rule::typename);
+    let inner = pair.into_inner().next().unwrap();
+    match inner.as_rule() {
+        Rule::typei32 => TypeName::Int32,
+        Rule::typebool => TypeName::Bool,
+        Rule::typeunit => TypeName::Unit,
+        _ => TypeName::Invalid,
+    }
 }
 
 fn main() {
