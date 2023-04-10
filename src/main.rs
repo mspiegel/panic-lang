@@ -118,9 +118,9 @@ fn parse_function(pair: Pair<Rule>) -> Function {
     for inner in pair.into_inner() {
         match inner.as_rule() {
             Rule::ident => name = inner.as_str().to_string(),
-            Rule::stmtBlock => body = parse_statement_block(inner),
+            Rule::stmt_block => body = parse_statement_block(inner),
             Rule::typename => typ = parse_type_name(inner),
-            Rule::funcParams => params = parse_func_params(inner),
+            Rule::func_params => params = parse_func_params(inner),
             _ => (),
         };
     }
@@ -133,7 +133,7 @@ fn parse_function(pair: Pair<Rule>) -> Function {
 }
 
 fn parse_func_param(pair: Pair<Rule>) -> FuncParam {
-    assert_eq!(pair.as_rule(), Rule::funcParam);
+    assert_eq!(pair.as_rule(), Rule::func_param);
     let mut name = "".to_string();
     let mut typ = TypeName::Invalid;
     for inner in pair.into_inner() {
@@ -147,10 +147,10 @@ fn parse_func_param(pair: Pair<Rule>) -> FuncParam {
 }
 
 fn parse_func_params(pair: Pair<Rule>) -> Vec<FuncParam> {
-    assert_eq!(pair.as_rule(), Rule::funcParams);
+    assert_eq!(pair.as_rule(), Rule::func_params);
     let mut params = Vec::new();
     for inner in pair.into_inner() {
-        if inner.as_rule() == Rule::funcParam {
+        if inner.as_rule() == Rule::func_param {
             params.push(parse_func_param(inner));
         }
     }
@@ -169,7 +169,7 @@ fn parse_type_name(pair: Pair<Rule>) -> TypeName {
 }
 
 fn parse_statement_block(pair: Pair<Rule>) -> Statements {
-    assert_eq!(pair.as_rule(), Rule::stmtBlock);
+    assert_eq!(pair.as_rule(), Rule::stmt_block);
     let mut stmts = Vec::new();
     for inner in pair.into_inner() {
         if inner.as_rule() == Rule::stmt {
@@ -183,19 +183,19 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
     assert_eq!(pair.as_rule(), Rule::stmt);
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
-        Rule::macroStmt => parse_macro_statement(inner),
-        Rule::exprStmt => parse_expr_statement(inner),
+        Rule::macro_stmt => parse_macro_statement(inner),
+        Rule::expr_stmt => parse_expr_statement(inner),
         _ => todo!("statement type not implemented"),
     }
 }
 
 fn parse_macro_statement(pair: Pair<Rule>) -> Statement {
-    assert_eq!(pair.as_rule(), Rule::macroStmt);
+    assert_eq!(pair.as_rule(), Rule::macro_stmt);
     return Statement::Macro(pair.as_str().to_string());
 }
 
 fn parse_expr_statement(pair: Pair<Rule>) -> Statement {
-    assert_eq!(pair.as_rule(), Rule::exprStmt);
+    assert_eq!(pair.as_rule(), Rule::expr_stmt);
     return Statement::Expr(parse_expression(pair.into_inner().next().unwrap()));
 }
 
@@ -320,7 +320,7 @@ fn parse_unary(pair: Pair<Rule>) -> Expr {
 fn parse_term(pair: Pair<Rule>) -> Expr {
     assert_eq!(pair.as_rule(), Rule::term);
     let pair = pair.into_inner().next().unwrap();
-    if pair.as_rule() == Rule::funcCall {
+    if pair.as_rule() == Rule::func_call {
         return parse_func_call(pair);
     } else {
         return parse_primary(pair);
@@ -328,7 +328,7 @@ fn parse_term(pair: Pair<Rule>) -> Expr {
 }
 
 fn parse_func_call(pair: Pair<Rule>) -> Expr {
-    assert_eq!(pair.as_rule(), Rule::funcCall);
+    assert_eq!(pair.as_rule(), Rule::func_call);
     let mut pair = pair.into_inner();
     let ident = pair.next().unwrap().as_str().to_string();
     let mut params = Vec::new();
@@ -361,7 +361,7 @@ fn parse_literal(pair: Pair<Rule>) -> Expr {
     let pair = pair.into_inner().next().unwrap();
     let rule = pair.as_rule();
     let result = match rule {
-        Rule::intLiteral => parse_int_literal(pair),
+        Rule::int_literal => parse_int_literal(pair),
         Rule::truelit => Expr::Bool(true),
         Rule::falselit => Expr::Bool(false),
         Rule::unitlit => Expr::Unit(),
@@ -371,7 +371,7 @@ fn parse_literal(pair: Pair<Rule>) -> Expr {
 }
 
 fn parse_int_literal(pair: Pair<Rule>) -> Expr {
-    assert_eq!(pair.as_rule(), Rule::intLiteral);
+    assert_eq!(pair.as_rule(), Rule::int_literal);
     let result = pair.as_str().parse::<i32>().unwrap();
     return Expr::Int32(result);
 }
