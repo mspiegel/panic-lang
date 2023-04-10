@@ -185,6 +185,7 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
     match inner.as_rule() {
         Rule::macro_stmt => parse_macro_statement(inner),
         Rule::expr_stmt => parse_expr_statement(inner),
+        Rule::return_stmt => parse_return_statement(inner),
         _ => todo!("statement type not implemented"),
     }
 }
@@ -197,6 +198,11 @@ fn parse_macro_statement(pair: Pair<Rule>) -> Statement {
 fn parse_expr_statement(pair: Pair<Rule>) -> Statement {
     assert_eq!(pair.as_rule(), Rule::expr_stmt);
     return Statement::Expr(parse_expression(pair.into_inner().next().unwrap()));
+}
+
+fn parse_return_statement(pair: Pair<Rule>) -> Statement {
+    assert_eq!(pair.as_rule(), Rule::return_stmt);
+    return Statement::Return(parse_expression(pair.into_inner().next().unwrap()));
 }
 
 fn parse_expression(pair: Pair<Rule>) -> Expr {
@@ -331,11 +337,22 @@ fn parse_func_call(pair: Pair<Rule>) -> Expr {
     assert_eq!(pair.as_rule(), Rule::func_call);
     let mut pair = pair.into_inner();
     let ident = pair.next().unwrap().as_str().to_string();
+    let params = parse_call_params(pair.next());
+    return Expr::FuncCall(ident, params);
+}
+
+fn parse_call_params(pair: Option<Pair<Rule>>) -> Vec<Expr> {
     let mut params = Vec::new();
+    if pair.is_none() {
+        return params;
+    }
+    let pair = pair.unwrap();
+    assert_eq!(pair.as_rule(), Rule::call_params);
+    let pair = pair.into_inner();
     for inner in pair {
         params.push(parse_expression(inner));
     }
-    return Expr::FuncCall(ident, params);
+    return params;
 }
 
 fn parse_primary(pair: Pair<Rule>) -> Expr {
