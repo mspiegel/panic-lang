@@ -146,7 +146,6 @@ fn parse_func_param(pair: Pair<Rule>) -> FuncParam {
     return FuncParam { name, typ };
 }
 
-
 fn parse_func_params(pair: Pair<Rule>) -> Vec<FuncParam> {
     assert_eq!(pair.as_rule(), Rule::funcParams);
     let mut params = Vec::new();
@@ -197,43 +196,190 @@ fn parse_macro_statement(pair: Pair<Rule>) -> Statement {
 
 fn parse_expr_statement(pair: Pair<Rule>) -> Statement {
     assert_eq!(pair.as_rule(), Rule::exprStmt);
-    return Statement::Expr(
-        parse_expression(
-            pair.into_inner().next().unwrap(),
-        )
-    );
+    return Statement::Expr(parse_expression(pair.into_inner().next().unwrap()));
 }
 
 fn parse_expression(pair: Pair<Rule>) -> Expr {
     assert_eq!(pair.as_rule(), Rule::expr);
     let pair = pair.into_inner().next().unwrap(); // Rule::compare
-    let mut pair:Vec<_> = pair.into_inner().collect();
-    if pair.len() == 1 {
-        return parse_addsub(pair.pop().unwrap());
+    let mut pair = pair.into_inner();
+    let lhs = pair.next();
+    let op = pair.next();
+    let rhs = pair.next();
+    if op.is_none() {
+        return parse_addsub(lhs.unwrap());
     }
-    if pair.len() == 3 {
-        let (rhs, op, lhs) = (pair.pop(), pair.pop(), pair.pop());
-        let (rhs, op, lhs) = (rhs.unwrap(), op.unwrap(), lhs.unwrap());
-        let lhs = Box::new(parse_addsub(lhs));
-        let op  = op.as_rule();
-        let rhs = Box::new(parse_addsub(rhs));
-        let result = match op {
-            Rule::lt => Expr::Lt(lhs, rhs),
-            Rule::le => Expr::Le(lhs, rhs),
-            Rule::eq => Expr::Equ(lhs, rhs),
-            Rule::ne => Expr::Neq(lhs, rhs),
-            Rule::ge => Expr::Ge(lhs, rhs),
-            Rule::gt => Expr::Gt(lhs, rhs),
-            _ => panic!("Unexpected rule {:?}", op),
-        };
-        return result;
-    }
-    panic!("Unexpected expression length {}", pair.len());
+    let (lhs, op, rhs) = (lhs.unwrap(), op.unwrap(), rhs.unwrap());
+    let lhs = Box::new(parse_addsub(lhs));
+    let op = op.as_rule();
+    let rhs = Box::new(parse_addsub(rhs));
+    let result = match op {
+        Rule::lt => Expr::Lt(lhs, rhs),
+        Rule::le => Expr::Le(lhs, rhs),
+        Rule::eq => Expr::Equ(lhs, rhs),
+        Rule::ne => Expr::Neq(lhs, rhs),
+        Rule::ge => Expr::Ge(lhs, rhs),
+        Rule::gt => Expr::Gt(lhs, rhs),
+        _ => panic!("Unexpected rule {:?}", op),
+    };
+    return result;
 }
 
 fn parse_addsub(pair: Pair<Rule>) -> Expr {
     assert_eq!(pair.as_rule(), Rule::addsub);
-    todo!("yolo");
+    let mut pair = pair.into_inner();
+    let lhs = pair.next();
+    let op = pair.next();
+    let rhs = pair.next();
+    if op.is_none() {
+        return parse_muldiv(lhs.unwrap());
+    }
+    let (lhs, op, rhs) = (lhs.unwrap(), op.unwrap(), rhs.unwrap());
+    let lhs = Box::new(parse_muldiv(lhs));
+    let op = op.as_rule();
+    let rhs = Box::new(parse_muldiv(rhs));
+    let mut result = match op {
+        Rule::add => Expr::Add(lhs, rhs),
+        Rule::sub => Expr::Sub(lhs, rhs),
+        _ => panic!("Unexpected rule {:?}", op),
+    };
+    let mut op_ = pair.next();
+    let mut rhs_ = pair.next();
+    while op_.is_some() {
+        let (op, rhs) = (op_.unwrap(), rhs_.unwrap());
+        let lhs = Box::new(result);
+        let op = op.as_rule();
+        let rhs = Box::new(parse_muldiv(rhs));
+        result = match op {
+            Rule::add => Expr::Add(lhs, rhs),
+            Rule::sub => Expr::Sub(lhs, rhs),
+            _ => panic!("Unexpected rule {:?}", op),
+        };
+        op_ = pair.next();
+        rhs_ = pair.next();
+    }
+    return result;
+}
+
+fn parse_muldiv(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::muldiv);
+    let mut pair = pair.into_inner();
+    let lhs = pair.next();
+    let op = pair.next();
+    let rhs = pair.next();
+    if op.is_none() {
+        return parse_unary(lhs.unwrap());
+    }
+    let (lhs, op, rhs) = (lhs.unwrap(), op.unwrap(), rhs.unwrap());
+    let lhs = Box::new(parse_unary(lhs));
+    let op = op.as_rule();
+    let rhs = Box::new(parse_unary(rhs));
+    let mut result = match op {
+        Rule::mul => Expr::Mul(lhs, rhs),
+        Rule::div => Expr::Div(lhs, rhs),
+        Rule::modulo => Expr::Mod(lhs, rhs),
+        _ => panic!("Unexpected rule {:?}", op),
+    };
+    let mut op_ = pair.next();
+    let mut rhs_ = pair.next();
+    while op_.is_some() {
+        let (op, rhs) = (op_.unwrap(), rhs_.unwrap());
+        let lhs = Box::new(result);
+        let op = op.as_rule();
+        let rhs = Box::new(parse_unary(rhs));
+        result = match op {
+            Rule::mul => Expr::Mul(lhs, rhs),
+            Rule::div => Expr::Div(lhs, rhs),
+            Rule::modulo => Expr::Mod(lhs, rhs),
+            _ => panic!("Unexpected rule {:?}", op),
+        };
+        op_ = pair.next();
+        rhs_ = pair.next();
+    }
+    return result;
+}
+
+fn parse_unary(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::unary);
+    let mut pair = pair.into_inner();
+    let left = pair.next().unwrap();
+    let right = pair.next();
+    if right.is_none() {
+        return parse_term(left);
+    }
+    let left = left.as_rule();
+    let right = right.unwrap();
+    let right = Box::new(parse_term(right));
+    let result = match left {
+        Rule::negative => Expr::Neg(right),
+        _ => panic!("Unexpected rule {:?}", left),
+    };
+    return result;
+}
+
+fn parse_term(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::term);
+    let pair = pair.into_inner().next().unwrap();
+    if pair.as_rule() == Rule::funcCall {
+        return parse_func_call(pair);
+    } else {
+        return parse_primary(pair);
+    }
+}
+
+fn parse_func_call(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::funcCall);
+    let mut pair = pair.into_inner();
+    let ident = pair.next().unwrap().as_str().to_string();
+    let mut params = Vec::new();
+    for inner in pair {
+        params.push(parse_expression(inner));
+    }
+    return Expr::FuncCall(ident, params);
+}
+
+fn parse_primary(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::primary);
+    let pair = pair.into_inner().next().unwrap();
+    let rule = pair.as_rule();
+    let result = match rule {
+        Rule::ident => parse_ident(pair),
+        Rule::literal => parse_literal(pair),
+        Rule::paren => parse_paren(pair),
+        _ => panic!("Unexpected rule {:?}", rule),
+    };
+    return result;
+}
+
+fn parse_ident(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::ident);
+    return Expr::Ident(pair.as_str().to_string());
+}
+
+fn parse_literal(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::literal);
+    let pair = pair.into_inner().next().unwrap();
+    let rule = pair.as_rule();
+    let result = match rule {
+        Rule::intLiteral => parse_int_literal(pair),
+        Rule::truelit => Expr::Bool(true),
+        Rule::falselit => Expr::Bool(false),
+        Rule::unitlit => Expr::Unit(),
+        _ => panic!("Unexpected rule {:?}", rule),
+    };
+    return result;
+}
+
+fn parse_int_literal(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::intLiteral);
+    let result = pair.as_str().parse::<i32>().unwrap();
+    return Expr::Int32(result);
+}
+
+fn parse_paren(pair: Pair<Rule>) -> Expr {
+    assert_eq!(pair.as_rule(), Rule::paren);
+    let pair = pair.into_inner().next().unwrap();
+    return Expr::Paren(Box::new(parse_expression(pair)));
 }
 
 fn main() {

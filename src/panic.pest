@@ -19,9 +19,9 @@ ifStmt        =   { "if" ~ expr ~ stmtBlock ~ ( "else" ~ ( stmtBlock | ifStmt ) 
 
 expr          =   { compare }
 compare       =   { addsub ~ ( ( lt | le | eq | ne | ge | gt ) ~ addsub )? }
-addsub        =   { muldiv ~ ( ( add | sub ) ~ muldiv )* }
-muldiv        =   { unary ~ ( ( mul | div | mod ) ~ unary )* }
-unary         =   { ( negative )* ~ term }
+addsub        =   { muldiv ~ ( add ~ muldiv )* ~ ( sub ~ muldiv )? ~ ( add ~ muldiv )* }
+muldiv        =   { unary ~  ( mul ~ unary )*  ~ ( ( div | modulo ) ~ unary )? ~ ( mul ~ unary )* }
+unary         =   { negative? ~ term }
 term          =   { funcCall | primary }
 
 lt            =   { "<"  }
@@ -34,7 +34,7 @@ add           =   { "+"  }
 sub           =   { "-"  }
 mul           =   { "*"  }
 div           =   { "/"  }
-mod           =   { "%"  }
+modulo        =   { "%"  }
 negative      =   { "-"  }
 
 funcCall      =   { ident ~ "(" ~ callParams? ~ ")" }
