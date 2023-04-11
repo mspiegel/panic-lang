@@ -1,0 +1,9 @@
+fn main() -> i32 {
+    if 1 + 2 == 3 {
+        println!("Foo");
+    } else if 1 + 2 == 4 {
+        println!("Bar");
+    } else {
+        println!("Baz");        
+    }
+}

@@ -186,6 +186,8 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
         Rule::macro_stmt => parse_macro_statement(inner),
         Rule::expr_stmt => parse_expr_statement(inner),
         Rule::return_stmt => parse_return_statement(inner),
+        Rule::let_stmt => parse_let_statement(inner),
+        Rule::if_stmt => Statement::If(parse_if_statement(inner)),
         _ => todo!("statement type not implemented"),
     }
 }
@@ -203,6 +205,45 @@ fn parse_expr_statement(pair: Pair<Rule>) -> Statement {
 fn parse_return_statement(pair: Pair<Rule>) -> Statement {
     assert_eq!(pair.as_rule(), Rule::return_stmt);
     return Statement::Return(parse_expression(pair.into_inner().next().unwrap()));
+}
+
+fn parse_let_statement(pair: Pair<Rule>) -> Statement {
+    assert_eq!(pair.as_rule(), Rule::let_stmt);
+    let mut name = "".to_string();
+    let mut typ = TypeName::Invalid;
+    let mut expr = None;
+    for inner in pair.into_inner() {
+        match inner.as_rule() {
+            Rule::ident => name = inner.as_str().to_string(),
+            Rule::typename => typ = parse_type_name(inner),
+            Rule::expr => expr = Some(parse_expression(inner)),
+            _ => (),
+        }
+    }
+    let expr = expr.unwrap();
+    return Statement::Let(LetStmt { name, typ, expr });
+}
+
+fn parse_if_statement(pair: Pair<Rule>) -> IfStmt {
+    assert_eq!(pair.as_rule(), Rule::if_stmt);
+    let mut conditions = Vec::new();
+    let mut statements = Vec::new();
+    for inner in pair.into_inner() {
+        match inner.as_rule() {
+            Rule::expr => conditions.push(parse_expression(inner)),
+            Rule::stmt_block => statements.push(parse_statement_block(inner)),
+            Rule::if_stmt => {
+                let mut nested = parse_if_statement(inner);
+                conditions.append(nested.conditions.as_mut());
+                statements.append(nested.statements.as_mut());
+            }
+            _ => (),
+        }
+    }
+    return IfStmt {
+        conditions,
+        statements,
+    };
 }
 
 fn parse_expression(pair: Pair<Rule>) -> Expr {
