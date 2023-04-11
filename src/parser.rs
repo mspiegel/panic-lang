@@ -85,7 +85,8 @@ fn parse_program(pair: Pair<Rule>) -> Program {
     for inner in pair.into_inner() {
         match inner.as_rule() {
             Rule::topdecl => decls.push(parse_top_decl(inner)),
-            _ => (),
+            Rule::EOI => (),
+            _ => panic!("Unexpected rule {:?}", inner.as_rule()),
         }
     }
     return Program { decls };
@@ -108,7 +109,7 @@ fn parse_function(pair: Pair<Rule>) -> Function {
             Rule::stmt_block => body = parse_statement_block(inner),
             Rule::typename => typ = parse_type_name(inner),
             Rule::func_params => params = parse_func_params(inner),
-            _ => (),
+            _ => panic!("Unexpected rule {:?}", inner.as_rule()),
         };
     }
     return Function {
@@ -127,7 +128,7 @@ fn parse_func_param(pair: Pair<Rule>) -> FuncParam {
         match inner.as_rule() {
             Rule::ident => name = inner.as_str().to_string(),
             Rule::typename => typ = parse_type_name(inner),
-            _ => (),
+            _ => panic!("Unexpected rule {:?}", inner.as_rule()),
         }
     }
     return FuncParam { name, typ };
@@ -175,7 +176,7 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
         Rule::return_stmt => parse_return_statement(inner),
         Rule::let_stmt => parse_let_statement(inner),
         Rule::if_stmt => Statement::If(parse_if_statement(inner)),
-        _ => todo!("statement type not implemented"),
+        _ => panic!("Unexpected rule {:?}", inner.as_rule()),
     }
 }
 
@@ -204,7 +205,7 @@ fn parse_let_statement(pair: Pair<Rule>) -> Statement {
             Rule::ident => name = inner.as_str().to_string(),
             Rule::typename => typ = parse_type_name(inner),
             Rule::expr => expr = Some(parse_expression(inner)),
-            _ => (),
+            _ => panic!("Unexpected rule {:?}", inner.as_rule()),
         }
     }
     let expr = expr.unwrap();
@@ -224,7 +225,7 @@ fn parse_if_statement(pair: Pair<Rule>) -> IfStmt {
                 conditions.append(nested.conditions.as_mut());
                 statements.append(nested.statements.as_mut());
             }
-            _ => (),
+            _ => panic!("Unexpected rule {:?}", inner.as_rule()),
         }
     }
     return IfStmt {
