@@ -9,7 +9,7 @@ typebool      =   { "bool" }
 typeunit      =   { "()" }
 func_params   =   { func_param ~ ("," ~ func_param)* ~ ","? }
 func_param    =   { ident ~ ":" ~ typename }
-stmt_block    =   { "{" ~ stmt+ ~ "}" }
+stmt_block    =   { "{" ~ stmt* ~ "}" }
 
 stmt          =   { ";" | macro_stmt | let_stmt | return_stmt | if_stmt | expr_stmt }
 let_stmt      =   { "let" ~ ident ~ ":" ~ typename ~ "=" ~ expr ~ ";" }
