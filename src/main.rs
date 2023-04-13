@@ -3,17 +3,22 @@ extern crate pest;
 extern crate pest_derive;
 extern crate pest_ascii_tree;
 
-#[derive(Parser)]
-#[grammar = "panic.pest"]
-struct PanicParser;
+mod peg_parser {
+    #[derive(Parser)]
+    #[grammar = "panic.pest"]
+    pub struct PanicParser;
+}
 
-include!("parser.rs");
+mod parser;
 
 use std::io;
 use std::io::BufRead;
 
 use pest::Parser;
 use pest_ascii_tree::print_ascii_tree;
+
+use crate::parser::parse_program;
+use crate::peg_parser::*;
 
 fn main() {
     let stdin = io::stdin();

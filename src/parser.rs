@@ -1,18 +1,25 @@
+#![allow(clippy::needless_return)]
+
 use pest::iterators::Pair;
 use std::fmt;
 
+use crate::peg_parser::*;
+
 #[derive(Debug)]
-struct Program {
+#[allow(dead_code)]
+pub struct Program {
     decls: Vec<TopDecl>,
 }
 
 #[derive(Debug)]
-enum TopDecl {
+#[allow(dead_code)]
+pub enum TopDecl {
     Func(Function),
 }
 
 #[derive(Debug)]
-struct Function {
+#[allow(dead_code)]
+pub struct Function {
     name: String,
     params: Vec<FuncParam>,
     typ: TypeName,
@@ -20,13 +27,15 @@ struct Function {
 }
 
 #[derive(Debug)]
-struct FuncParam {
+#[allow(dead_code)]
+pub struct FuncParam {
     name: String,
     typ: TypeName,
 }
 
 #[derive(Debug)]
-enum TypeName {
+#[allow(dead_code)]
+pub enum TypeName {
     Invalid,
     Int32,
     Bool,
@@ -34,7 +43,8 @@ enum TypeName {
 }
 
 #[derive(Debug)]
-enum Statement {
+#[allow(dead_code)]
+pub enum Statement {
     Expr(Expr),
     Return(Expr),
     Macro(String),
@@ -43,22 +53,25 @@ enum Statement {
 }
 
 #[derive(Debug)]
-struct LetStmt {
+#[allow(dead_code)]
+pub struct LetStmt {
     name: String,
     typ: TypeName,
     expr: Expr,
 }
 
 #[derive(Debug)]
-struct IfStmt {
+#[allow(dead_code)]
+pub struct IfStmt {
     conditions: Vec<Expr>,
     statements: Vec<Statements>,
 }
 
-type Statements = Vec<Statement>;
+pub type Statements = Vec<Statement>;
 
 // Changes to Expr must be propagated to DebugExpr!
-enum Expr {
+#[allow(dead_code)]
+pub enum Expr {
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
@@ -79,7 +92,7 @@ enum Expr {
     Unit(),
 }
 
-fn parse_program(pair: Pair<Rule>) -> Program {
+pub fn parse_program(pair: Pair<Rule>) -> Program {
     assert_eq!(pair.as_rule(), Rule::program);
     let mut decls = Vec::new();
     for inner in pair.into_inner() {
@@ -453,13 +466,13 @@ enum DebugExpr {
 
 impl fmt::Debug for Expr {
     // TODO is there a sane way to implement Debug specialization
-    // for some of the Expr variants? 
+    // for some of the Expr variants?
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expr::Int32(i) => write!(f, "Int32({})", i),
             Expr::Bool(b) => write!(f, "Bool({})", b),
             Expr::Ident(s) => write!(f, "Ident({})", s),
-            _ => unsafe { (&*(self as *const Expr as *const DebugExpr)).fmt(f) },
+            _ => unsafe { (*(self as *const Expr as *const DebugExpr)).fmt(f) },
         }
     }
 }
