@@ -20,7 +20,7 @@ if_stmt       =   { "if" ~ expr ~ stmt_block ~ ( "else" ~ ( stmt_block | if_stmt
 expr          =   { compare }
 compare       =   { addsub ~ ( ( lt | le | eq | ne | ge | gt ) ~ addsub )? }
 addsub        =   { muldiv ~ ( (add | sub) ~ muldiv )* }
-muldiv        =   { unary ~  ( (mul | div | modulo ) ~ unary )* }
+muldiv        =   { unary ~  ( (mul | div | rem ) ~ unary )* }
 unary         =   { negative? ~ term }
 term          =   { func_call | primary }
 
@@ -34,7 +34,7 @@ add           =   { "+"  }
 sub           =   { "-"  }
 mul           =   { "*"  }
 div           =   { "/"  }
-modulo        =   { "%"  }
+rem           =   { "%"  }
 negative      =   { "-"  }
 
 func_call     =   { ident ~ "(" ~ call_params? ~ ")" }

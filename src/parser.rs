@@ -76,7 +76,7 @@ pub enum Expr {
     Sub(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
-    Mod(Box<Expr>, Box<Expr>),
+    Rem(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
     Lt(Box<Expr>, Box<Expr>),
     Le(Box<Expr>, Box<Expr>),
@@ -325,7 +325,7 @@ fn parse_muldiv(pair: Pair<Rule>) -> Expr {
     let mut result = match op {
         Rule::mul => Expr::Mul(lhs, rhs),
         Rule::div => Expr::Div(lhs, rhs),
-        Rule::modulo => Expr::Mod(lhs, rhs),
+        Rule::rem => Expr::Rem(lhs, rhs),
         _ => panic!("Unexpected rule {:?}", op),
     };
     let mut op_ = pair.next();
@@ -338,7 +338,7 @@ fn parse_muldiv(pair: Pair<Rule>) -> Expr {
         result = match op {
             Rule::mul => Expr::Mul(lhs, rhs),
             Rule::div => Expr::Div(lhs, rhs),
-            Rule::modulo => Expr::Mod(lhs, rhs),
+            Rule::rem => Expr::Rem(lhs, rhs),
             _ => panic!("Unexpected rule {:?}", op),
         };
         op_ = pair.next();
@@ -448,7 +448,7 @@ enum DebugExpr {
     Sub(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
-    Mod(Box<Expr>, Box<Expr>),
+    Rem(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
     Lt(Box<Expr>, Box<Expr>),
     Le(Box<Expr>, Box<Expr>),

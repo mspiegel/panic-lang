@@ -10,6 +10,7 @@ mod peg_parser {
 }
 
 mod parser;
+mod runtime;
 
 use std::io;
 use std::io::BufRead;
