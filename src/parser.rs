@@ -22,7 +22,7 @@ pub enum TopDecl {
 pub struct Function {
     name: String,
     params: Vec<FuncParam>,
-    typ: TypeName,
+    typ: TypeExpr,
     body: Statements,
 }
 
@@ -30,12 +30,19 @@ pub struct Function {
 #[allow(dead_code)]
 pub struct FuncParam {
     name: String,
-    typ: TypeName,
+    typ: TypeExpr,
 }
 
 #[derive(Debug)]
 #[allow(dead_code)]
-pub enum TypeName {
+pub struct TypeExpr {
+    primitive: TypeEnum,
+    nominal: bool,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum TypeEnum {
     Invalid,
     Int32,
     Bool,
@@ -56,7 +63,7 @@ pub enum Statement {
 #[allow(dead_code)]
 pub struct LetStmt {
     name: String,
-    typ: TypeName,
+    typ: TypeExpr,
     expr: Expr,
 }
 
@@ -92,6 +99,15 @@ pub enum Expr {
     Unit(),
 }
 
+impl TypeExpr {
+    pub fn new(primitive: TypeEnum, nominal: bool) -> TypeExpr {
+        TypeExpr { primitive, nominal }
+    }
+    pub fn invalid() -> TypeExpr {
+        TypeExpr::new(TypeEnum::Invalid, false)
+    }
+}
+
 pub fn parse_program(pair: Pair<Rule>) -> Program {
     assert_eq!(pair.as_rule(), Rule::program);
     let mut decls = Vec::new();
@@ -114,7 +130,7 @@ fn parse_function(pair: Pair<Rule>) -> Function {
     assert_eq!(pair.as_rule(), Rule::function);
     let mut name = "".to_string();
     let mut params = Vec::new();
-    let mut typ = TypeName::Invalid;
+    let mut typ = TypeExpr::invalid();
     let mut body = Vec::new();
     for inner in pair.into_inner() {
         match inner.as_rule() {
@@ -136,7 +152,7 @@ fn parse_function(pair: Pair<Rule>) -> Function {
 fn parse_func_param(pair: Pair<Rule>) -> FuncParam {
     assert_eq!(pair.as_rule(), Rule::func_param);
     let mut name = "".to_string();
-    let mut typ = TypeName::Invalid;
+    let mut typ = TypeExpr::invalid();
     for inner in pair.into_inner() {
         match inner.as_rule() {
             Rule::ident => name = inner.as_str().to_string(),
@@ -158,15 +174,22 @@ fn parse_func_params(pair: Pair<Rule>) -> Vec<FuncParam> {
     return params;
 }
 
-fn parse_type_name(pair: Pair<Rule>) -> TypeName {
+fn parse_type_name(pair: Pair<Rule>) -> TypeExpr {
     assert_eq!(pair.as_rule(), Rule::typename);
-    let inner = pair.into_inner().next().unwrap();
-    match inner.as_rule() {
-        Rule::typei32 => TypeName::Int32,
-        Rule::typebool => TypeName::Bool,
-        Rule::typeunit => TypeName::Unit,
-        _ => TypeName::Invalid,
+    let mut pairs = pair.into_inner();
+    let mut inner = pairs.next().unwrap();
+    let mut nominal = false;
+    if inner.as_rule() == Rule::nominal {
+        nominal = true;
+        inner = pairs.next().unwrap();
     }
+    let primitive = match inner.as_rule() {
+        Rule::typei32 => TypeEnum::Int32,
+        Rule::typebool => TypeEnum::Bool,
+        Rule::typeunit => TypeEnum::Unit,
+        _ => TypeEnum::Invalid,
+    };
+    return TypeExpr::new(primitive, nominal);
 }
 
 fn parse_statement_block(pair: Pair<Rule>) -> Statements {
@@ -211,7 +234,7 @@ fn parse_return_statement(pair: Pair<Rule>) -> Statement {
 fn parse_let_statement(pair: Pair<Rule>) -> Statement {
     assert_eq!(pair.as_rule(), Rule::let_stmt);
     let mut name = "".to_string();
-    let mut typ = TypeName::Invalid;
+    let mut typ = TypeExpr::invalid();
     let mut expr = None;
     for inner in pair.into_inner() {
         match inner.as_rule() {

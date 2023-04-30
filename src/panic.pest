@@ -3,7 +3,8 @@ WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 program       =   { SOI ~ topdecl* ~ EOI }
 topdecl       =   { function }
 function      =   { "fn" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ typename ~ stmt_block }
-typename      =   { typei32 | typebool | typeunit }
+typename      =   { nominal? ~ ( typei32 | typebool | typeunit ) }
+nominal       =   { "nom" }
 typei32       =   { "i32" }
 typebool      =   { "bool" }
 typeunit      =   { "()" }
@@ -49,7 +50,7 @@ unitlit       =   { "()"    }
 
 int_literal   =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
 any_ident     =  @{ XID_START ~ XID_CONTINUE* }
-keyword       =  @{ "fn" | "i32" | "bool" | "let" | "return" | "if" | "else" | "true" | "false" }
+keyword       =  @{ "fn" | "i32" | "bool" | "let" | "return" | "if" | "else" | "true" | "false" | "nom" }
 
 macro_stmt    =   { macro_ident ~ "(" ~ macro_params? ~ ")" ~ ";" }
 macro_params  =   { macro_expr ~ ("," ~ macro_expr)* ~ ","? }
