@@ -1,36 +1,17 @@
+use crate::types::panic::Panic;
+use crate::types::panic::PanicEnum;
+use enumset::enum_set;
 use std::ops;
 
-use enumset::enum_set;
-use enumset::EnumSet;
-use enumset::EnumSetType;
-
 #[allow(dead_code)]
-#[derive(EnumSetType, Debug)]
-pub enum PanicEnum {
-    StackOverflow,
-    HeapOverflow,
-    IntegerOverflow,
-    IntegerDivisionByZero,
-    ArrayIndexOutOfBounds,
-}
+pub struct Int32(pub Result<i32, Panic>);
 
-pub type Panic = EnumSet<PanicEnum>;
-
-#[allow(dead_code)]
-pub struct Int32(Result<i32, Panic>);
-
-#[allow(dead_code)]
-pub struct Bool(Result<bool, Panic>);
-
-#[allow(dead_code)]
-pub struct Unit(Result<(), Panic>);
-
-impl ops::Add for Int32 {
+impl<T: Into<Int32>> ops::Add<T> for Int32 {
     type Output = Int32;
 
-    fn add(self, other: Int32) -> Int32 {
-        let output = match (self.0, other.0) {
-            (Err(p1), Err(p2)) => Err(p1 | p2),
+    fn add(self, other: T) -> Int32 {
+        let output = match (self.0, other.into().0) {
+            (Err(p1), Err(p2)) => Err(p1.union(p2)),
             (Err(p1), _) => Err(p1),
             (_, Err(p2)) => Err(p2),
             (Ok(a), Ok(b)) => {
@@ -46,12 +27,12 @@ impl ops::Add for Int32 {
     }
 }
 
-impl ops::Sub for Int32 {
+impl<T: Into<Int32>> ops::Sub<T> for Int32 {
     type Output = Int32;
 
-    fn sub(self, other: Int32) -> Int32 {
-        let output = match (self.0, other.0) {
-            (Err(p1), Err(p2)) => Err(p1 | p2),
+    fn sub(self, other: T) -> Int32 {
+        let output = match (self.0, other.into().0) {
+            (Err(p1), Err(p2)) => Err(p1.union(p2)),
             (Err(p1), _) => Err(p1),
             (_, Err(p2)) => Err(p2),
             (Ok(a), Ok(b)) => {
@@ -67,12 +48,12 @@ impl ops::Sub for Int32 {
     }
 }
 
-impl ops::Mul for Int32 {
+impl<T: Into<Int32>> ops::Mul<T> for Int32 {
     type Output = Int32;
 
-    fn mul(self, other: Int32) -> Int32 {
-        let output = match (self.0, other.0) {
-            (Err(p1), Err(p2)) => Err(p1 | p2),
+    fn mul(self, other: T) -> Int32 {
+        let output = match (self.0, other.into().0) {
+            (Err(p1), Err(p2)) => Err(p1.union(p2)),
             (Err(p1), _) => Err(p1),
             (_, Err(p2)) => Err(p2),
             (Ok(a), Ok(b)) => {
@@ -88,12 +69,12 @@ impl ops::Mul for Int32 {
     }
 }
 
-impl ops::Div for Int32 {
+impl<T: Into<Int32>> ops::Div<T> for Int32 {
     type Output = Int32;
 
-    fn div(self, other: Int32) -> Int32 {
-        let output = match (self.0, other.0) {
-            (Err(p1), Err(p2)) => Err(p1 | p2),
+    fn div(self, other: T) -> Int32 {
+        let output = match (self.0, other.into().0) {
+            (Err(p1), Err(p2)) => Err(p1.union(p2)),
             (Err(p1), _) => Err(p1),
             (_, Err(p2)) => Err(p2),
             (Ok(_), Ok(0)) => Err(enum_set!(PanicEnum::IntegerDivisionByZero)),
@@ -110,12 +91,12 @@ impl ops::Div for Int32 {
     }
 }
 
-impl ops::Rem for Int32 {
+impl<T: Into<Int32>> ops::Rem<T> for Int32 {
     type Output = Int32;
 
-    fn rem(self, other: Int32) -> Int32 {
-        let output = match (self.0, other.0) {
-            (Err(p1), Err(p2)) => Err(p1 | p2),
+    fn rem(self, other: T) -> Int32 {
+        let output = match (self.0, other.into().0) {
+            (Err(p1), Err(p2)) => Err(p1.union(p2)),
             (Err(p1), _) => Err(p1),
             (_, Err(p2)) => Err(p2),
             (Ok(_), Ok(0)) => Err(enum_set!(PanicEnum::IntegerDivisionByZero)),
