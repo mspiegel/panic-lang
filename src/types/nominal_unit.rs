@@ -8,7 +8,7 @@ pub struct NominalUnit(pub ());
 impl Into<Unit> for NominalUnit {
     fn into(self) -> Unit {
         match self {
-            NominalUnit(val) => Unit(Ok(val))
+            NominalUnit(val) => Unit(Ok(val)),
         }
     }
 }
