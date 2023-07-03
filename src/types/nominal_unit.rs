@@ -5,10 +5,9 @@ use crate::types::unit::Unit;
 pub struct NominalUnit(pub ());
 
 impl NominalUnit {
-
     #[inline(always)]
     pub fn anxious(self) -> Unit {
-        return Unit(Ok(()));
+        Unit(Ok(()))
     }
 }
 
@@ -20,5 +19,4 @@ mod tests {
     fn test_anxious() {
         assert_eq!(NominalUnit(()).anxious(), Unit(Ok(())));
     }
-
 }

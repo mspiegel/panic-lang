@@ -5,12 +5,10 @@ use crate::types::panic::Panic;
 pub struct Bool(pub Result<bool, Panic>);
 
 impl Bool {
-
     #[inline(always)]
     pub fn anxious(self) -> Bool {
-        return self;
+        self
     }
-
 }
 
 #[cfg(test)]
@@ -20,7 +18,6 @@ mod tests {
     #[test]
     fn test_anxious() {
         assert_eq!(Bool(Ok(true)).anxious(), Bool(Ok(true)));
-        assert_eq!(Bool(Ok(false)).anxious(), Bool(Ok(false)));        
+        assert_eq!(Bool(Ok(false)).anxious(), Bool(Ok(false)));
     }
-
 }

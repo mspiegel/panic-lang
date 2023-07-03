@@ -24,10 +24,9 @@ macro_rules! or {
 }
 
 impl NominalBool {
-
     #[inline(always)]
     pub fn anxious(self) -> Bool {
-        return Bool(Ok(self.0))
+        Bool(Ok(self.0))
     }
 }
 
@@ -75,6 +74,6 @@ mod tests {
     #[test]
     fn test_anxious() {
         assert_eq!(NominalBool(true).anxious(), Bool(Ok(true)));
-        assert_eq!(NominalBool(false).anxious(), Bool(Ok(false)));        
+        assert_eq!(NominalBool(false).anxious(), Bool(Ok(false)));
     }
 }

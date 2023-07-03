@@ -140,12 +140,10 @@ impl ops::Neg for Int32 {
 }
 
 impl Int32 {
-
     #[inline(always)]
     pub fn anxious(self) -> Int32 {
-        return self;
+        self
     }
-
 }
 
 #[cfg(test)]
@@ -156,5 +154,4 @@ mod tests {
     fn test_anxious() {
         assert_eq!(Int32(Ok(0)).anxious(), Int32(Ok(0)));
     }
-
 }
