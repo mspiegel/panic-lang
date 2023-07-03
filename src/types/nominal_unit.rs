@@ -4,11 +4,21 @@ use crate::types::unit::Unit;
 #[derive(PartialEq, Eq, Debug)]
 pub struct NominalUnit(pub ());
 
-#[allow(clippy::from_over_into)]
-impl Into<Unit> for NominalUnit {
-    fn into(self) -> Unit {
-        match self {
-            NominalUnit(val) => Unit(Ok(val)),
-        }
+impl NominalUnit {
+
+    #[inline(always)]
+    pub fn anxious(self) -> Unit {
+        return Unit(Ok(()));
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_anxious() {
+        assert_eq!(NominalUnit(()).anxious(), Unit(Ok(())));
+    }
+
 }

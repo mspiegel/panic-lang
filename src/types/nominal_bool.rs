@@ -3,15 +3,6 @@ use crate::types::bool::Bool;
 #[derive(PartialEq, Eq, Debug)]
 pub struct NominalBool(pub bool);
 
-#[allow(clippy::from_over_into)]
-impl Into<Bool> for NominalBool {
-    fn into(self) -> Bool {
-        match self {
-            NominalBool(val) => Bool(Ok(val)),
-        }
-    }
-}
-
 #[allow(unused_macros)]
 macro_rules! and {
     ($x:expr, $y:expr) => {
@@ -30,6 +21,14 @@ macro_rules! or {
             NominalBool(false) => $y,
         }
     };
+}
+
+impl NominalBool {
+
+    #[inline(always)]
+    pub fn anxious(self) -> Bool {
+        return Bool(Ok(self.0))
+    }
 }
 
 #[cfg(test)]
@@ -71,5 +70,11 @@ mod tests {
             NominalBool(true)
         );
         assert_eq!(or!(NominalBool(true), NominalBool(true)), NominalBool(true));
+    }
+
+    #[test]
+    fn test_anxious() {
+        assert_eq!(NominalBool(true).anxious(), Bool(Ok(true)));
+        assert_eq!(NominalBool(false).anxious(), Bool(Ok(false)));        
     }
 }

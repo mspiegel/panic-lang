@@ -1,7 +1,7 @@
-mod bool;
-mod int32;
-mod nominal_bool;
-mod nominal_int32;
-mod nominal_unit;
-mod panic;
-mod unit;
+pub mod bool;
+pub mod int32;
+pub mod nominal_bool;
+pub mod nominal_int32;
+pub mod nominal_unit;
+pub mod panic;
+pub mod unit;

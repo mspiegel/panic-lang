@@ -4,11 +4,21 @@ use crate::types::int32::Int32;
 #[derive(PartialEq, Eq, Debug)]
 pub struct NominalInt32(pub i32);
 
-#[allow(clippy::from_over_into)]
-impl Into<Int32> for NominalInt32 {
-    fn into(self) -> Int32 {
-        match self {
-            NominalInt32(val) => Int32(Ok(val)),
-        }
+impl NominalInt32 {
+
+    #[inline(always)]
+    pub fn anxious(self) -> Int32 {
+        return Int32(Ok(self.0));
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;    
+
+    #[test]
+    fn test_anxious() {
+        assert_eq!(NominalInt32(0).anxious(), Int32(Ok(0)));
+    }
+
 }
