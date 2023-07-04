@@ -4,19 +4,14 @@ use crate::types::panic::Panic;
 #[derive(PartialEq, Eq, Debug)]
 pub struct Unit(pub Result<(), Panic>);
 
-impl Unit {
-    #[inline(always)]
-    pub fn anxious(self) -> Unit {
-        self
+impl From<()> for Unit {
+    fn from(item: ()) -> Self {
+        Unit(Ok(item))
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_anxious() {
-        assert_eq!(Unit(Ok(())).anxious(), Unit(Ok(())));
+impl From<Panic> for Unit {
+    fn from(item: Panic) -> Self {
+        Unit(Err(item))
     }
 }

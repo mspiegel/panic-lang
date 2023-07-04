@@ -7,6 +7,18 @@ use std::ops;
 #[derive(PartialEq, Eq, Debug)]
 pub struct Int32(pub Result<i32, Panic>);
 
+impl From<i32> for Int32 {
+    fn from(item: i32) -> Self {
+        Int32(Ok(item))
+    }
+}
+
+impl From<Panic> for Int32 {
+    fn from(item: Panic) -> Self {
+        Int32(Err(item))
+    }
+}
+
 impl ops::Add for Int32 {
     type Output = Int32;
 
@@ -136,22 +148,5 @@ impl ops::Neg for Int32 {
             }
         };
         Int32(output)
-    }
-}
-
-impl Int32 {
-    #[inline(always)]
-    pub fn anxious(self) -> Int32 {
-        self
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_anxious() {
-        assert_eq!(Int32(Ok(0)).anxious(), Int32(Ok(0)));
     }
 }
