@@ -1,38 +1,62 @@
-extern crate pest;
 #[macro_use]
-extern crate pest_derive;
-extern crate pest_ascii_tree;
+extern crate lazy_static;
 
-mod peg_parser {
-    #[derive(Parser)]
-    #[grammar = "panic.pest"]
-    pub struct PanicParser;
+use std::collections::HashMap;
+
+use quote::quote;
+use syn::PathSegment;
+use syn::visit_mut::VisitMut;
+use syn::Ident;
+use syn::File;
+use syn::Type;
+
+mod types;
+
+struct PanicToRustTypes;
+
+lazy_static! {
+    static ref PANIC_TO_RUST_TYPES: HashMap<String, String> =
+        HashMap::from([
+            ( "i32".to_string(), "Int32".to_string() ),
+            ( "bool".to_string(), "Bool".to_string() ),
+            ( "()".to_string(), "Unit".to_string() ),
+            ( "nom_i32".to_string(), "i32".to_string() ),
+            ( "nom_bool".to_string(), "bool".to_string() ),
+            ( "nom_()".to_string(), "()".to_string() ),
+        ]);
 }
 
-mod parser;
-pub mod types;
-
-use std::io;
-use std::io::BufRead;
-
-use pest::Parser;
-use pest_ascii_tree::print_ascii_tree;
-
-use crate::parser::parse_program;
-use crate::peg_parser::*;
-
-fn main() {
-    let stdin = io::stdin();
-    let lines: Vec<_> = stdin.lock().lines().collect::<Result<_, _>>().unwrap();
-    let input = lines.join("\n");
-
-    let pairs = PanicParser::parse(Rule::program, &input);
-    if pairs.is_err() {
-        panic!("{}", pairs.unwrap_err());
+impl VisitMut for PanicToRustTypes {
+    fn visit_type_mut(&mut self, node: &mut Type) {
+        if let Type::Path(ref mut type_path) = node {
+            let path = &mut type_path.path;
+            let ident = path.get_ident();
+            if let Some(ident) = ident {
+                let span = ident.span();
+                let new_type = PANIC_TO_RUST_TYPES.get(
+                    &ident.to_string());
+                match new_type {
+                    Some(new_type) =>
+                        *path.segments.first_mut().unwrap() = 
+                            PathSegment::from(Ident::new(new_type, span)),
+                    None =>
+                        panic!("Unknown type {}", ident),
+                };
+            }
+        }
     }
 
-    print_ascii_tree(pairs.clone());
+}
 
-    let prog = parse_program(pairs.unwrap().next().unwrap());
-    println!("{:#?}", prog);
+
+fn main() {
+    let code = quote! {
+        fn add1(x: i32) -> i32 {
+            x + 1
+        }
+    };
+
+    let mut syntax_tree: File = syn::parse2(code).unwrap();
+    PanicToRustTypes.visit_file_mut(&mut syntax_tree);
+    println!("{}", quote!(#syntax_tree));
 }

@@ -3,9 +3,11 @@ use crate::types::panic::PanicEnum;
 use enumset::enum_set;
 use std::ops;
 
+use super::anxious::Anxious;
+
 #[allow(dead_code)]
 #[derive(PartialEq, Eq, Debug)]
-pub struct Int32(pub Result<i32, Panic>);
+pub struct Int32(Result<i32, Panic>);
 
 impl From<i32> for Int32 {
     fn from(item: i32) -> Self {
@@ -16,6 +18,22 @@ impl From<i32> for Int32 {
 impl From<Panic> for Int32 {
     fn from(item: Panic) -> Self {
         Int32(Err(item))
+    }
+}
+
+impl Anxious for Int32 {
+    type Output = Int32;
+
+    fn value(self) -> Self::Output {
+        return Self::Output::from(self)
+    }
+}
+
+impl Anxious for i32 {
+    type Output = Int32;
+
+    fn value(self) -> Self::Output {
+        return Self::Output::from(self)
     }
 }
 
