@@ -1,9 +1,9 @@
 use enumset::enum_set;
 use std::ops;
 
+use super::anxious::Anxious;
 use super::anxious::Anxious::Nom;
 use super::anxious::Anxious::Panic;
-use super::anxious::Anxious;
 use super::panic::PanicEnum;
 
 impl From<i32> for Anxious<i32> {
@@ -18,8 +18,7 @@ impl ops::Add for Anxious<i32> {
     #[inline(always)]
     fn add(self, other: Anxious<i32>) -> Anxious<i32> {
         match (self, other) {
-            (Panic(p1), Panic(p2)) =>
-                Panic(p1.union(p2)),
+            (Panic(p1), Panic(p2)) => Panic(p1.union(p2)),
             (Panic(p1), _) => Panic(p1),
             (_, Panic(p2)) => Panic(p2),
             (Nom(a), Nom(b)) => {
@@ -40,8 +39,7 @@ impl ops::Sub for Anxious<i32> {
     #[inline(always)]
     fn sub(self, other: Anxious<i32>) -> Anxious<i32> {
         match (self, other) {
-            (Panic(p1), Panic(p2)) =>
-                Panic(p1.union(p2)),
+            (Panic(p1), Panic(p2)) => Panic(p1.union(p2)),
             (Panic(p1), _) => Panic(p1),
             (_, Panic(p2)) => Panic(p2),
             (Nom(a), Nom(b)) => {
@@ -62,8 +60,7 @@ impl ops::Mul for Anxious<i32> {
     #[inline(always)]
     fn mul(self, other: Anxious<i32>) -> Anxious<i32> {
         match (self, other) {
-            (Panic(p1), Panic(p2)) =>
-                Panic(p1.union(p2)),
+            (Panic(p1), Panic(p2)) => Panic(p1.union(p2)),
             (Panic(p1), _) => Panic(p1),
             (_, Panic(p2)) => Panic(p2),
             (Nom(a), Nom(b)) => {
@@ -84,8 +81,7 @@ impl ops::Div for Anxious<i32> {
     #[inline(always)]
     fn div(self, other: Anxious<i32>) -> Anxious<i32> {
         match (self, other) {
-            (Panic(p1), Panic(p2)) =>
-                Panic(p1.union(p2)),
+            (Panic(p1), Panic(p2)) => Panic(p1.union(p2)),
             (Panic(p1), _) => Panic(p1),
             (_, Panic(p2)) => Panic(p2),
             (Nom(_), Nom(0)) => Panic(enum_set!(PanicEnum::IntegerDivisionByZero)),
@@ -107,8 +103,7 @@ impl ops::Rem for Anxious<i32> {
     #[inline(always)]
     fn rem(self, other: Anxious<i32>) -> Anxious<i32> {
         match (self, other) {
-            (Panic(p1), Panic(p2)) =>
-                Panic(p1.union(p2)),
+            (Panic(p1), Panic(p2)) => Panic(p1.union(p2)),
             (Panic(p1), _) => Panic(p1),
             (_, Panic(p2)) => Panic(p2),
             (Nom(_), Nom(0)) => Panic(enum_set!(PanicEnum::IntegerDivisionByZero)),

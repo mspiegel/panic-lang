@@ -5,7 +5,7 @@ pub enum Anxious<T> {
     Panic(PanicType),
 }
 
-impl <T> From<PanicType> for Anxious<T> {
+impl<T> From<PanicType> for Anxious<T> {
     fn from(item: PanicType) -> Self {
         Anxious::Panic(item)
     }
