@@ -47,7 +47,7 @@ impl VisitMut for PanicToRustTypes {
 
 fn main() {
     let code = quote! {
-        fn add1(x: i32) -> i32 {
+        fn add1(x: nom_i32) -> i32 {
             x + 1
         }
     };
