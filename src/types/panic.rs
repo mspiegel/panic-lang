@@ -11,4 +11,4 @@ pub enum PanicEnum {
     ArrayIndexOutOfBounds,
 }
 
-pub type Panic = EnumSet<PanicEnum>;
+pub type PanicType = EnumSet<PanicEnum>;

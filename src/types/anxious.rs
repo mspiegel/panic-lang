@@ -1,5 +1,12 @@
-pub trait Anxious {
-    type Output;
+use super::panic::PanicType;
 
-    fn value(self) -> Self::Output;
+pub enum Anxious<T> {
+    Nom(T),
+    Panic(PanicType),
+}
+
+impl <T> From<PanicType> for Anxious<T> {
+    fn from(item: PanicType) -> Self {
+        Anxious::Panic(item)
+    }
 }
