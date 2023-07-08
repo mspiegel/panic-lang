@@ -138,7 +138,6 @@ impl ops::Neg for Anxious<i32> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -151,6 +150,9 @@ mod tests {
     #[test]
     fn test_add() {
         assert_eq!("Nom(3)", format!("{:?}", Anxious::Nom(1) + Anxious::Nom(2)));
-        assert_eq!("Panic(EnumSet(IntegerOverflow))", format!("{:?}", Anxious::Nom(i32::MAX) + Anxious::Nom(1)));
-    }    
+        assert_eq!(
+            "Panic(EnumSet(IntegerOverflow))",
+            format!("{:?}", Anxious::Nom(i32::MAX) + Anxious::Nom(1))
+        );
+    }
 }

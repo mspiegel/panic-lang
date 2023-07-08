@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use super::panic::PanicType;
+use std::fmt::Debug;
 
 pub enum Anxious<T> {
     Nom(T),
