@@ -23,16 +23,10 @@ impl<T: Debug> Debug for Anxious<T> {
 
 pub trait AnxiousFactory {
     type Output;
-    type Input: Into<Self::Output>;
-
-    fn convert(item: Self::Input) -> Self::Output;
+    fn convert(self) -> Self::Output;
 }
 
-impl<T: Into<Anxious<T>>> AnxiousFactory for Anxious<T> {
-    type Output = Anxious<T>;
-    type Input = T;
-
-    fn convert(item: Self::Input) -> Self::Output {
-        item.into()
-    }
+#[macro_export]
+macro_rules! ack {
+    ($e:expr) => { AnxiousFactory::convert($e) };
 }

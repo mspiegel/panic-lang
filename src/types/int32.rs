@@ -4,11 +4,26 @@ use std::ops;
 use super::anxious::Anxious;
 use super::anxious::Anxious::Nom;
 use super::anxious::Anxious::Panic;
+use super::anxious::AnxiousFactory;
 use super::panic::PanicEnum;
 
 impl From<i32> for Anxious<i32> {
     fn from(item: i32) -> Self {
         Nom(item)
+    }
+}
+
+impl AnxiousFactory for i32 {
+    type Output = Anxious<i32>;
+    fn convert(self) -> Self::Output {
+        self.into()
+    }
+}
+
+impl AnxiousFactory for Anxious<i32> {
+    type Output = Anxious<i32>;
+    fn convert(self) -> Self::Output {
+        self.into()
     }
 }
 
@@ -141,10 +156,17 @@ impl ops::Neg for Anxious<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ack;
 
     #[test]
     fn test_debug() {
         assert_eq!("Nom(0)", format!("{:?}", Anxious::Nom(0)));
+    }
+
+    #[test]
+    fn test_ack() {
+        assert_eq!("Nom(0)", format!("{:?}", ack!(0)));
+        assert_eq!("Nom(0)", format!("{:?}", ack!(Anxious::Nom(0))));
     }
 
     #[test]
