@@ -8,7 +8,7 @@ pub struct PanicCompilerErrors;
 
 impl VisitMut for PanicCompilerErrors {
     fn visit_item_fn_mut(&mut self, node: &mut ItemFn) {
-        if "main" == node.sig.ident.to_string() {
+        if node.sig.ident == "main" {
             return;
         }
         match &node.sig.output {

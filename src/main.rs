@@ -42,5 +42,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     PanicToRustOperators.visit_file_mut(&mut ast);
     PanicCompilerErrors.visit_file_mut(&mut ast);
     println!("{}", pretty_print(&quote!(#ast)));
-    return Ok(());
+    Ok(())
 }

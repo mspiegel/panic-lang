@@ -22,7 +22,7 @@ impl AnxiousFactory for i32 {
 impl AnxiousFactory for Anxious<i32> {
     type Output = Anxious<i32>;
     fn convert(self) -> Self::Output {
-        self.into()
+        self
     }
 }
 
