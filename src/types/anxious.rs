@@ -22,11 +22,11 @@ impl<T: Debug> Debug for Anxious<T> {
     }
 }
 
-impl <T: Display> Display for Anxious<T> {
+impl<T: Display> Display for Anxious<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Nom(val) => val.fmt(f),
-            Self::Panic(p) =>p.fmt(f),
+            Self::Panic(p) => p.fmt(f),
         }
     }
 }
@@ -38,5 +38,7 @@ pub trait AnxiousFactory {
 
 #[macro_export]
 macro_rules! ack {
-    ($e:expr) => { AnxiousFactory::convert($e) };
+    ($e:expr) => {
+        AnxiousFactory::convert($e)
+    };
 }

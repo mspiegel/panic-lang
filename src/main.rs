@@ -1,6 +1,6 @@
 use std::error::Error;
-use std::io::Read;
 use std::io::stdin;
+use std::io::Read;
 
 use quote::quote;
 use syn::visit_mut::VisitMut;
@@ -44,4 +44,3 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{}", pretty_print(&quote!(#ast)));
     return Ok(());
 }
-

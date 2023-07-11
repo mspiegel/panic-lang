@@ -1,6 +1,6 @@
-use std::str::FromStr;
 use proc_macro2::TokenStream;
 use quote::quote;
+use std::str::FromStr;
 use syn::visit_mut::VisitMut;
 use syn::Type;
 
