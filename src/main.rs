@@ -1,8 +1,8 @@
-#[macro_use]
-extern crate lazy_static;
+use std::error::Error;
+use std::io::Read;
+use std::io::stdin;
 
 use quote::quote;
-use syn::File;
 use syn::visit_mut::VisitMut;
 
 mod compiler;
@@ -17,7 +17,8 @@ fn pretty_print(ts: &proc_macro2::TokenStream) -> String {
     prettyplease::unparse(&file)
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
+    /*
     let code = quote! {
         fn add1(x: nom_i32) -> i32 {
             x + 1
@@ -32,11 +33,15 @@ fn main() {
 
         }
     };
+    */
 
-    let mut syntax_tree: File = syn::parse2(code).unwrap();
-    PanicToRustTypes.visit_file_mut(&mut syntax_tree);
-    PanicToRustOperators.visit_file_mut(&mut syntax_tree);
-    PanicCompilerErrors.visit_file_mut(&mut syntax_tree);
-    println!("{}", pretty_print(&quote!(#syntax_tree)));
+    let mut content = String::new();
+    stdin().lock().read_to_string(&mut content)?;
+    let mut ast = syn::parse_file(&content)?;
+    PanicToRustTypes.visit_file_mut(&mut ast);
+    PanicToRustOperators.visit_file_mut(&mut ast);
+    PanicCompilerErrors.visit_file_mut(&mut ast);
+    println!("{}", pretty_print(&quote!(#ast)));
+    return Ok(());
 }
 

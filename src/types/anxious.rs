@@ -1,13 +1,14 @@
-use super::panic::PanicType;
+use super::panic::panic;
 use std::fmt::Debug;
+use std::fmt::Display;
 
 pub enum Anxious<T> {
     Nom(T),
-    Panic(PanicType),
+    Panic(panic),
 }
 
-impl<T> From<PanicType> for Anxious<T> {
-    fn from(item: PanicType) -> Self {
+impl<T> From<panic> for Anxious<T> {
+    fn from(item: panic) -> Self {
         Anxious::Panic(item)
     }
 }
@@ -17,6 +18,15 @@ impl<T: Debug> Debug for Anxious<T> {
         match self {
             Self::Nom(arg0) => f.debug_tuple("Nom").field(arg0).finish(),
             Self::Panic(arg0) => f.debug_tuple("Panic").field(arg0).finish(),
+        }
+    }
+}
+
+impl <T: Display> Display for Anxious<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Nom(val) => val.fmt(f),
+            Self::Panic(p) =>p.fmt(f),
         }
     }
 }

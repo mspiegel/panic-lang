@@ -1,14 +1,10 @@
-use enumset::EnumSet;
-use enumset::EnumSetType;
-
+#[allow(non_camel_case_types)]
 #[allow(dead_code)]
-#[derive(EnumSetType, Debug)]
-pub enum PanicEnum {
-    StackOverflow,
-    HeapOverflow,
+#[derive(Debug)]
+pub enum panic {
+    StackOverflow, // not yet implemented
+    HeapOverflow,  // not yet implemented
     IntegerOverflow,
     IntegerDivisionByZero,
-    ArrayIndexOutOfBounds,
+    ArrayIndexOutOfBounds, // not yet implemented
 }
-
-pub type PanicType = EnumSet<PanicEnum>;
