@@ -1,0 +1,11 @@
+[package]
+name = "panic-runtime"
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "prototype runtime for the Panic language"
+homepage = "https://github.com/mspiegel/panic-lang"
+repository = "https://github.com/mspiegel/panic-lang"
+readme = "README.md"
+
+[dependencies]

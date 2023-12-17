@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "panic-lang"
+name = "panic-runtime"
 version = "0.0.1"

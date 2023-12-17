@@ -1,11 +1,5 @@
-[package]
-name = "panic-lang"
-version = "0.0.1"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-description = "the Panic programming language never panics"
-homepage = "https://github.com/mspiegel/panic-lang"
-repository = "https://github.com/mspiegel/panic-lang"
-readme = "README.md"
+[workspace]
 
-[dependencies]
+members = [
+    "runtime",
+]
