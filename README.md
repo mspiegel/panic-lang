@@ -1,6 +1,6 @@
 # panic-lang
 
-![static analysis](https://github.com/mspiegel/oint/actions/workflows/static-analysis.yaml/badge.svg) ![unit tests](https://github.com/mspiegel/oint/actions/workflows/unit-tests.yaml/badge.svg) [![codecov](https://codecov.io/gh/mspiegel/oint/graph/badge.svg?token=7H2EY41PIE)](https://codecov.io/gh/mspiegel/oint)
+![static analysis](https://github.com/mspiegel/panic-lang/actions/workflows/static-analysis.yaml/badge.svg) ![unit tests](https://github.com/mspiegel/panic-lang/actions/workflows/unit-tests.yaml/badge.svg) [![codecov](https://codecov.io/gh/mspiegel/panic-lang/graph/badge.svg?token=7H2EY41PIE)](https://codecov.io/gh/mspiegel/panic-lang)
 
 The Panic programming language will be a programming language that never panics.
 
