@@ -61,7 +61,7 @@ Anxious types. Anxious types are the default types of the Panic type system. Anx
 `i8` can return Panic value `IntegerOverflow` on arithmetic operations `+`, `-`, `*`  
 `i8` can return Panic value `IntegerOverflow` or `IntegerDivizionByZero` on arithmetic operations `/`, `%`  
 `bi8` and `nom bi8` perform wrapped arithmetic on `+`, `-`, `*`  
-`bi8` can return Panic value `IntegerDivizionByZero` on arithmetic operations `/`, `%`  
+`bi8` performs wrapped arithmetic or Panic value `IntegerDivizionByZero` on arithmetic operations `/`, `%`  
 Equality and Comparison are defined on the nominal integers  
 Display is defined on all nominal primitive types  
 Debug is defined on all primitive types  
