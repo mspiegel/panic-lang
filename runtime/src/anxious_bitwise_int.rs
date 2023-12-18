@@ -174,6 +174,57 @@ macro_rules! anxious_bitwise_int_impl {
                 }
             }
 
+            impl ops::BitAnd<$SelfT> for $SelfT {
+                type Output = $SelfT;
+
+                fn bitand(self, rhs: $SelfT) -> $SelfT {
+                    let inner = match (self.0, rhs.0) {
+                        (Err(e), _) => Err(e),
+                        (_, Err(e)) => Err(e),
+                        (Ok(a), Ok(b)) => Ok(a & b),
+                    };
+                    $SelfT(inner)
+                }
+            }
+
+            impl ops::BitOr<$SelfT> for $SelfT {
+                type Output = $SelfT;
+
+                fn bitor(self, rhs: $SelfT) -> $SelfT {
+                    let inner = match (self.0, rhs.0) {
+                        (Err(e), _) => Err(e),
+                        (_, Err(e)) => Err(e),
+                        (Ok(a), Ok(b)) => Ok(a | b),
+                    };
+                    $SelfT(inner)
+                }
+            }
+
+            impl ops::BitXor<$SelfT> for $SelfT {
+                type Output = $SelfT;
+
+                fn bitxor(self, rhs: $SelfT) -> $SelfT {
+                    let inner = match (self.0, rhs.0) {
+                        (Err(e), _) => Err(e),
+                        (_, Err(e)) => Err(e),
+                        (Ok(a), Ok(b)) => Ok(a ^ b),
+                    };
+                    $SelfT(inner)
+                }
+            }
+
+            impl ops::Not for $SelfT {
+                type Output = $SelfT;
+
+                fn not(self) -> $SelfT {
+                    let inner = match self.0 {
+                        Err(e) => Err(e),
+                        Ok(a) => Ok(!a),
+                    };
+                    $SelfT(inner)
+                }
+            }
+
             impl fmt::Debug for $SelfT {
                 fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                     match self.0 {
@@ -379,6 +430,63 @@ macro_rules! anxious_bitwise_int_impl {
                     assert!(structural_eq!(
                         $SelfT::MIN.div_euclid($SelfT::from(-1)),
                         $SelfT::MIN
+                    ));
+                }
+
+                #[test]
+                fn test_bitwise_and() {
+                    assert!(structural_eq!(
+                        $SelfT::from(Panic::ThisIsFine) & $SelfT::from(0),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(
+                        $SelfT::from(0) & $SelfT::from(Panic::ThisIsFine),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(
+                        $SelfT::from(2) & $SelfT::from(3),
+                        $SelfT::from(2)
+                    ));
+                }
+
+                #[test]
+                fn test_bitwise_or() {
+                    assert!(structural_eq!(
+                        $SelfT::from(Panic::ThisIsFine) | $SelfT::from(0),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(
+                        $SelfT::from(0) | $SelfT::from(Panic::ThisIsFine),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(
+                        $SelfT::from(2) | $SelfT::from(3),
+                        $SelfT::from(3)
+                    ));
+                }
+
+                #[test]
+                fn test_bitwise_not() {
+                    assert!(structural_eq!(
+                        !$SelfT::from(Panic::ThisIsFine),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(!$SelfT::from(0), $SelfT::from(-1)));
+                }
+
+                #[test]
+                fn test_bitwise_xor() {
+                    assert!(structural_eq!(
+                        $SelfT::from(Panic::ThisIsFine) ^ $SelfT::from(0),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(
+                        $SelfT::from(0) ^ $SelfT::from(Panic::ThisIsFine),
+                        $SelfT::from(Panic::ThisIsFine)
+                    ));
+                    assert!(structural_eq!(
+                        $SelfT::from(2) ^ $SelfT::from(3),
+                        $SelfT::from(1)
                     ));
                 }
 
