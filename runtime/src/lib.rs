@@ -4,6 +4,8 @@ mod panic;
 #[macro_use]
 mod anxious_int;
 #[macro_use]
+mod anxious_bitwise_int;
+#[macro_use]
 mod nominal_int;
 #[macro_use]
 mod test;
@@ -53,6 +55,20 @@ nominal_int_impl! {NominalI32, i32, nominal_i32}
 nominal_int_impl! {NominalI64, i64, nominal_i64}
 nominal_int_impl! {NominalI128, i128, nominal_i128}
 nominal_int_impl! {NominalISize, isize, nominal_isize}
+
+anxious_int_decl! {AnxiousBitwiseI8, i8}
+anxious_int_decl! {AnxiousBitwiseI16, i16}
+anxious_int_decl! {AnxiousBitwiseI32, i32}
+anxious_int_decl! {AnxiousBitwiseI64, i64}
+anxious_int_decl! {AnxiousBitwiseI128, i128}
+anxious_int_decl! {AnxiousBitwiseISize, isize}
+
+anxious_bitwise_int_impl! {AnxiousBitwiseI8, i8, anxious_bitwise_i8}
+anxious_bitwise_int_impl! {AnxiousBitwiseI16, i16, anxious_bitwise_i16}
+anxious_bitwise_int_impl! {AnxiousBitwiseI32, i32, anxious_bitwise_i32}
+anxious_bitwise_int_impl! {AnxiousBitwiseI64, i64, anxious_bitwise_i64}
+anxious_bitwise_int_impl! {AnxiousBitwiseI128, i128, anxious_bitwise_i128}
+anxious_bitwise_int_impl! {AnxiousBitwiseISize, isize, anxious_bitwise_isize}
 
 #[cfg(test)]
 mod total_operations {
