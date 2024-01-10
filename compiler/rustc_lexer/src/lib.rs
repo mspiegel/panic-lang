@@ -221,31 +221,6 @@ pub enum Base {
     Hexadecimal = 16,
 }
 
-/// `rustc` allows files to have a shebang, e.g. "#!/usr/bin/rustrun",
-/// but shebang isn't a part of rust syntax.
-pub fn strip_shebang(input: &str) -> Option<usize> {
-    // Shebang must start with `#!` literally, without any preceding whitespace.
-    // For simplicity we consider any line starting with `#!` a shebang,
-    // regardless of restrictions put on shebangs by specific platforms.
-    if let Some(input_tail) = input.strip_prefix("#!") {
-        // Ok, this is a shebang but if the next non-whitespace token is `[`,
-        // then it may be valid Rust code, so consider it Rust code.
-        let next_non_whitespace_token = tokenize(input_tail).map(|tok| tok.kind).find(|tok| {
-            !matches!(
-                tok,
-                TokenKind::Whitespace
-                    | TokenKind::LineComment { doc_style: None }
-                    | TokenKind::BlockComment { doc_style: None, .. }
-            )
-        });
-        if next_non_whitespace_token != Some(TokenKind::OpenBracket) {
-            // No other choice than to consider this a shebang.
-            return Some(2 + input_tail.lines().next().unwrap_or_default().len());
-        }
-    }
-    None
-}
-
 /// Validates a raw string literal. Used for getting more information about a
 /// problem with a `RawStr`/`RawByteStr` with a `None` field.
 #[inline]
