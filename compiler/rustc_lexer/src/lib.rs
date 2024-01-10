@@ -22,6 +22,7 @@
 #![deny(rustc::diagnostic_outside_of_impl)]
 // We want to be able to build this crate with a stable compiler, so no
 // `#![feature]` attributes should be added.
+#![allow(clippy::all)]
 
 mod cursor;
 pub mod unescape;
