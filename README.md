@@ -54,7 +54,7 @@ Anxious types. Anxious types are the default types of the Panic type system. Anx
 | `==`                |    | ✓        |    | ✓      |
 | `<`, `>`            |    | ✓        |    | ✓      |
 | `&`, `\|`, `^`, `!` |    |          | ✓  | ✓      |
-| `<<`, `>>`, `>>>`   |    |          | ✓  | ✓      |
+| `<<`, `>>`,         |    |          | ✓  | ✓      |
 | Display             |    | ✓        |    | ✓      |
 | Debug               | ✓  | ✓        | ✓ | ✓      |
 
