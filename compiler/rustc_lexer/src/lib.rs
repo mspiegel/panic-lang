@@ -95,9 +95,6 @@ pub enum TokenKind {
     /// See [LiteralKind] for more details.
     Literal { kind: LiteralKind, suffix_start: u32 },
 
-    /// "'a"
-    Lifetime { starts_with_number: bool },
-
     // One-char tokens:
     /// ";"
     Semi,
@@ -419,8 +416,16 @@ impl Cursor<'_> {
             '^' => Caret,
             '%' => Percent,
 
-            // Lifetime or character literal.
-            '\'' => self.lifetime_or_char(),
+            // character literal.
+            '\'' => {
+                let terminated = self.single_quoted_string();
+                let suffix_start = self.pos_within_token();
+                if terminated {
+                    self.eat_literal_suffix();
+                }
+                let kind = Char { terminated };
+                Literal { kind, suffix_start }
+            }
 
             // String literal.
             '"' => {
@@ -648,52 +653,6 @@ impl Cursor<'_> {
                 Float { base, empty_exponent }
             }
             _ => Int { base, empty_int: false },
-        }
-    }
-
-    fn lifetime_or_char(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '\'');
-
-        let can_be_a_lifetime = if self.second() == '\'' {
-            // It's surely not a lifetime.
-            false
-        } else {
-            // If the first symbol is valid for identifier, it can be a lifetime.
-            // Also check if it's a number for a better error reporting (so '0 will
-            // be reported as invalid lifetime and not as unterminated char literal).
-            is_id_start(self.first()) || self.first().is_digit(10)
-        };
-
-        if !can_be_a_lifetime {
-            let terminated = self.single_quoted_string();
-            let suffix_start = self.pos_within_token();
-            if terminated {
-                self.eat_literal_suffix();
-            }
-            let kind = Char { terminated };
-            return Literal { kind, suffix_start };
-        }
-
-        // Either a lifetime or a character literal with
-        // length greater than 1.
-
-        let starts_with_number = self.first().is_digit(10);
-
-        // Skip the literal contents.
-        // First symbol can be a number (which isn't a valid identifier start),
-        // so skip it without any checks.
-        self.bump();
-        self.eat_while(is_id_continue);
-
-        // Check if after skipping literal contents we've met a closing
-        // single quote (which means that user attempted to create a
-        // string with single quotes).
-        if self.first() == '\'' {
-            self.bump();
-            let kind = Char { terminated: true };
-            Literal { kind, suffix_start: self.pos_within_token() }
-        } else {
-            Lifetime { starts_with_number }
         }
     }
 

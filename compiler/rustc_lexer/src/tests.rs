@@ -231,16 +231,6 @@ fn characters() {
 }
 
 #[test]
-fn lifetime() {
-    check_lexing(
-        "'abc",
-        expect![[r#"
-            Token { kind: Lifetime { starts_with_number: false }, len: 4 }
-        "#]],
-    );
-}
-
-#[test]
 fn raw_string() {
     check_lexing(
         "r###\"\"#a\\b\x00c\"\"###",
