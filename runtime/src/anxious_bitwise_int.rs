@@ -263,10 +263,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(1) + $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(1) + $SelfT::from(2),
-                        $SelfT::from(3)
-                    ));
+                    assert!(structural_eq!($SelfT::from(1) + $SelfT::from(2), $SelfT::from(3)));
                     assert!(structural_eq!($SelfT::MAX + $SelfT::from(1), $SelfT::MIN));
                 }
 
@@ -280,10 +277,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(1) - $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(3) - $SelfT::from(2),
-                        $SelfT::from(1)
-                    ));
+                    assert!(structural_eq!($SelfT::from(3) - $SelfT::from(2), $SelfT::from(1)));
                     assert!(structural_eq!($SelfT::MIN - $SelfT::from(1), $SelfT::MAX));
                 }
 
@@ -297,10 +291,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(1) * $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(2) * $SelfT::from(3),
-                        $SelfT::from(6)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2) * $SelfT::from(3), $SelfT::from(6)));
                     assert!(($SelfT::MAX * $SelfT::MAX).0.is_ok());
                 }
 
@@ -314,10 +305,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(1) / $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(3) / $SelfT::from(2),
-                        $SelfT::from(1)
-                    ));
+                    assert!(structural_eq!($SelfT::from(3) / $SelfT::from(2), $SelfT::from(1)));
                     assert!(structural_eq!(
                         $SelfT::from(1) / $SelfT::from(0),
                         $SelfT::from(Panic::IntegerDivisionByZero)
@@ -335,18 +323,12 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(1) % $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(3) % $SelfT::from(2),
-                        $SelfT::from(1)
-                    ));
+                    assert!(structural_eq!($SelfT::from(3) % $SelfT::from(2), $SelfT::from(1)));
                     assert!(structural_eq!(
                         $SelfT::from(1) % $SelfT::from(0),
                         $SelfT::from(Panic::IntegerDivisionByZero)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::MIN % $SelfT::from(-1),
-                        $SelfT::from(0)
-                    ));
+                    assert!(structural_eq!($SelfT::MIN % $SelfT::from(-1), $SelfT::from(0)));
                 }
 
                 #[test]
@@ -359,14 +341,8 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(2).max($SelfT::from(Panic::ThisIsFine)),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(2).max($SelfT::from(1)),
-                        $SelfT::from(2)
-                    ));
-                    assert!(structural_eq!(
-                        $SelfT::from(1).max($SelfT::from(2)),
-                        $SelfT::from(2)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2).max($SelfT::from(1)), $SelfT::from(2)));
+                    assert!(structural_eq!($SelfT::from(1).max($SelfT::from(2)), $SelfT::from(2)));
                 }
 
                 #[test]
@@ -379,14 +355,8 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(2).min($SelfT::from(Panic::ThisIsFine)),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(2).min($SelfT::from(1)),
-                        $SelfT::from(1)
-                    ));
-                    assert!(structural_eq!(
-                        $SelfT::from(1).min($SelfT::from(2)),
-                        $SelfT::from(1)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2).min($SelfT::from(1)), $SelfT::from(1)));
+                    assert!(structural_eq!($SelfT::from(1).min($SelfT::from(2)), $SelfT::from(1)));
                 }
 
                 #[test]
@@ -427,10 +397,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::MIN.div_euclid($SelfT::from(0)),
                         $SelfT::from(Panic::IntegerDivisionByZero)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::MIN.div_euclid($SelfT::from(-1)),
-                        $SelfT::MIN
-                    ));
+                    assert!(structural_eq!($SelfT::MIN.div_euclid($SelfT::from(-1)), $SelfT::MIN));
                 }
 
                 #[test]
@@ -443,10 +410,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(0) & $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(2) & $SelfT::from(3),
-                        $SelfT::from(2)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2) & $SelfT::from(3), $SelfT::from(2)));
                 }
 
                 #[test]
@@ -459,10 +423,7 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(0) | $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(2) | $SelfT::from(3),
-                        $SelfT::from(3)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2) | $SelfT::from(3), $SelfT::from(3)));
                 }
 
                 #[test]
@@ -484,18 +445,12 @@ macro_rules! anxious_bitwise_int_impl {
                         $SelfT::from(0) ^ $SelfT::from(Panic::ThisIsFine),
                         $SelfT::from(Panic::ThisIsFine)
                     ));
-                    assert!(structural_eq!(
-                        $SelfT::from(2) ^ $SelfT::from(3),
-                        $SelfT::from(1)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2) ^ $SelfT::from(3), $SelfT::from(1)));
                 }
 
                 #[test]
                 fn test_clone() {
-                    assert!(structural_eq!(
-                        $SelfT::from(0).clone(),
-                        $SelfT::from(0).clone()
-                    ));
+                    assert!(structural_eq!($SelfT::from(0).clone(), $SelfT::from(0).clone()));
                     assert!(structural_eq!(
                         $SelfT::from(Panic::ThisIsFine).clone(),
                         $SelfT::from(Panic::ThisIsFine).clone()
@@ -505,10 +460,7 @@ macro_rules! anxious_bitwise_int_impl {
                 #[test]
                 fn test_debug() {
                     assert_eq!(format!("{:?}", $SelfT::from(1)), "1");
-                    assert_eq!(
-                        format!("{:?}", $SelfT::from(Panic::ThisIsFine)),
-                        "ThisIsFine"
-                    );
+                    assert_eq!(format!("{:?}", $SelfT::from(Panic::ThisIsFine)), "ThisIsFine");
                 }
             }
         }

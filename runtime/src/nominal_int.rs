@@ -102,34 +102,19 @@ macro_rules! nominal_int_impl {
 
                 #[test]
                 fn test_max() {
-                    assert!(structural_eq!(
-                        $SelfT::from(2).max($SelfT::from(1)),
-                        $SelfT::from(2)
-                    ));
-                    assert!(structural_eq!(
-                        $SelfT::from(1).max($SelfT::from(2)),
-                        $SelfT::from(2)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2).max($SelfT::from(1)), $SelfT::from(2)));
+                    assert!(structural_eq!($SelfT::from(1).max($SelfT::from(2)), $SelfT::from(2)));
                 }
 
                 #[test]
                 fn test_min() {
-                    assert!(structural_eq!(
-                        $SelfT::from(2).min($SelfT::from(1)),
-                        $SelfT::from(1)
-                    ));
-                    assert!(structural_eq!(
-                        $SelfT::from(1).min($SelfT::from(2)),
-                        $SelfT::from(1)
-                    ));
+                    assert!(structural_eq!($SelfT::from(2).min($SelfT::from(1)), $SelfT::from(1)));
+                    assert!(structural_eq!($SelfT::from(1).min($SelfT::from(2)), $SelfT::from(1)));
                 }
 
                 #[test]
                 fn test_clone() {
-                    assert!(structural_eq!(
-                        $SelfT::from(0).clone(),
-                        $SelfT::from(0).clone()
-                    ));
+                    assert!(structural_eq!($SelfT::from(0).clone(), $SelfT::from(0).clone()));
                 }
 
                 #[test]
