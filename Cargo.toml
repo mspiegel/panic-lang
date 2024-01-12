@@ -2,5 +2,4 @@
 
 members = [
     "runtime",
-    "compiler/rustc_lexer",
 ]
