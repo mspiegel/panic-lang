@@ -22,5 +22,8 @@ Design goals for the Panic language:
   - compilation will proceed by running the interpreter and then running the compiler
 - operator precedence has a partial ordering. Ambiguities must be resolved with parenthesis.
   - as is the case in [Wuffs](https://github.com/google/wuffs), [Carbon](https://github.com/carbon-language/carbon-lang), [Austral](https://austral-lang.org/), etc.
+- language keywords must be both prefixed and suffixed by the underscore ('\_') character
+  - keywords and identifiers are future-proof to never overlap
+  - your text editor or IDE can convert the unsightly characters to syntax highlighting
 
 Panic has been inspired by [Rust](https://www.rust-lang.org/), [Zig](https://ziglang.org/), [Pony](https://www.ponylang.io/), [Hylo](https://www.hylo-lang.org/), and other languages.
