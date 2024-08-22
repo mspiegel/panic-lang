@@ -21,6 +21,6 @@ Design goals for the Panic language:
   - the interpreter language will support types as values (first-class types)
   - compilation will proceed by running the interpreter and then running the compiler
 - operator precedence has a partial ordering. Ambiguities must be resolved with parenthesis.
-  - as is the case in [Wuffs](https://github.com/google/wuffs), [Carbon](https://github.com/carbon-language/carbon-lang),[Austral](https://austral-lang.org/), etc.
+  - as is the case in [Wuffs](https://github.com/google/wuffs), [Carbon](https://github.com/carbon-language/carbon-lang), [Austral](https://austral-lang.org/), etc.
 
 Panic has been inspired by [Rust](https://www.rust-lang.org/), [Zig](https://ziglang.org/), [Pony](https://www.ponylang.io/), [Hylo](https://www.hylo-lang.org/), and other languages.
