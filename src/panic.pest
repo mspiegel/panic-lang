@@ -1,0 +1,56 @@
+WHITESPACE    =  _{ " " | "\t" | NEWLINE }
+
+program       =   { SOI ~ topdecl* ~ EOI }
+topdecl       =   { function }
+function      =   { "_fn_" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ type ~ stmt_block }
+type          =   { identifier | "()" }
+func_params   =   { func_param ~ ("," ~ func_param)* ~ ","? }
+func_param    =   { ident ~ ":" ~ type }
+stmt_block    =   { "{" ~ stmt* ~ "}" }
+
+stmt          =   { ";" | let_stmt | return_stmt | if_stmt | expr_stmt }
+let_stmt      =   { "_let_" ~ ident ~ ":" ~ type ~ "=" ~ expr ~ ";" }
+expr_stmt     =   { expr ~ ";" }
+return_stmt   =   { "_return_" ~ expr ~ ";" }
+if_stmt       =   { "_if_" ~ expr ~ stmt_block ~ ( "_else_" ~ ( stmt_block | if_stmt ) )? }
+
+expr          =   { associative | binop }
+associative   =  _{ addops | mulops }
+addops        =  _{ unary ~ (add ~ unary)+ }
+mulops        =  _{ unary ~ (mul ~ unary)+ }
+binop         =  _{ unary ~ (compare | sub | div | rem ) ~ unary  }
+compare       =  _{ lt | le | eq | ne | ge | gt }
+unary         =  _{ negative? ~ term }
+term          =  _{ func_call | primary }
+
+lt            =   { "<"  }
+le            =   { "<=" }
+eq            =   { "==" }
+ne            =   { "!=" }
+ge            =   { ">=" }
+gt            =   { ">"  }
+add           =   { "+"  }
+sub           =   { "-"  }
+mul           =   { "*"  }
+div           =   { "/"  }
+rem           =   { "%"  }
+negative      =   { "-"  }
+
+func_call     =   { ident ~ "(" ~ call_params? ~ ")" }
+call_params   =   { expr ~ ("," ~ expr)* ~ ","? }
+primary       =  _{ ident | literal | paren }
+paren         =   { "(" ~ expr ~ ")" }
+ident         =  _{ !keyword ~ identifier }
+literal       =  _{ int_literal | truelit | falselit | unitlit }
+truelit       =   { "true"  }
+falselit      =   { "false" }
+unitlit       =   { "()"    }
+
+int_literal   =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
+identifier    =  @{ XID_START ~ XID_CONTINUE* }
+keyword       =  @{ "true" | "false" }
+
+str_literal   =  @{ "\"" ~ str_inner ~ "\"" }
+str_inner     =  @{ (!("\"" | "\\") ~ ANY)* ~ (str_escape ~ str_inner)? }
+str_escape    =  @{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" ) }
+
