@@ -47,20 +47,20 @@ pub struct Program {
 
 #[derive(Debug)]
 pub enum TopDecl {
-    Func(Function),
+    Func(FunctionDecl),
 }
 
 #[derive(Debug)]
-pub struct Function {
+pub struct FunctionDecl {
     pub ident: Identifier,
-    pub params: Vec<FuncParam>,
+    pub params: Vec<FuncParamDecl>,
     pub return_type: TypeRef,
     pub stmts: Vec<Stmt>,
     pub span: SpanPair,
 }
 
 #[derive(Debug)]
-pub struct FuncParam {
+pub struct FuncParamDecl {
     pub ident: Identifier,
     pub type_ref: TypeRef,
     pub span: SpanPair,
@@ -120,7 +120,8 @@ pub struct Expr {
 pub enum ExprType {
     IntLiteral(BigInt),
     BoolLiteral(bool),
-    VarReference(String),
+    VarReference(Identifier),
+    FuncCall(Identifier, Vec<Expr>),
     Add(Vec<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Mul(Vec<Expr>),
@@ -145,10 +146,10 @@ pub fn program(pair: Pair<Rule>) -> Program {
 }
 
 fn top_decl(pair: Pair<Rule>) -> TopDecl {
-    TopDecl::Func(function(pair.into_inner().next().unwrap()))
+    TopDecl::Func(function_decl(pair.into_inner().next().unwrap()))
 }
 
-fn function(pair: Pair<Rule>) -> Function {
+fn function_decl(pair: Pair<Rule>) -> FunctionDecl {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap());
@@ -156,13 +157,13 @@ fn function(pair: Pair<Rule>) -> Function {
     let params = if next.as_rule() == Rule::func_params {
         let params = next;
         next = children.next().unwrap();
-        func_params(params)
+        func_params_decl(params)
     } else {
         vec![]
     };
     let return_type = type_reference(next);
     let stmts = statement_block(children.next().unwrap());
-    Function {
+    FunctionDecl {
         ident,
         params,
         return_type,
@@ -171,16 +172,16 @@ fn function(pair: Pair<Rule>) -> Function {
     }
 }
 
-fn func_params(pair: Pair<Rule>) -> Vec<FuncParam> {
-    pair.into_inner().map(func_param).collect()
+fn func_params_decl(pair: Pair<Rule>) -> Vec<FuncParamDecl> {
+    pair.into_inner().map(func_param_decl).collect()
 }
 
-fn func_param(pair: Pair<Rule>) -> FuncParam {
+fn func_param_decl(pair: Pair<Rule>) -> FuncParamDecl {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap());
     let type_ref = type_reference(children.next().unwrap());
-    FuncParam {
+    FuncParamDecl {
         ident,
         type_ref,
         span,
@@ -240,10 +241,12 @@ fn expression(mut pair: Pair<Rule>) -> Expr {
     let expr = match pair.as_rule() {
         Rule::int_literal => int_literal(pair),
         Rule::addops => add_operator(pair),
+        Rule::mulops => mul_operator(pair),
         Rule::identifier => var_reference(pair),
         Rule::binop => binary_operator(pair),
         Rule::unary => unary_operator(pair),
         Rule::paren => paren(pair),
+        Rule::func_call => function_call(pair),
         r => panic!("unexpected expression rule {:?}", r),
     };
     Expr { expr, span }
@@ -260,11 +263,15 @@ fn int_literal(pair: Pair<Rule>) -> ExprType {
 }
 
 fn var_reference(pair: Pair<Rule>) -> ExprType {
-    ExprType::VarReference(String::from(pair.as_span().as_str()))
+    ExprType::VarReference(identifier(pair))
 }
 
 fn add_operator(pair: Pair<Rule>) -> ExprType {
     ExprType::Add(pair.into_inner().map(expression).collect())
+}
+
+fn mul_operator(pair: Pair<Rule>) -> ExprType {
+    ExprType::Mul(pair.into_inner().map(expression).collect())
 }
 
 fn binary_operator(pair: Pair<Rule>) -> ExprType {
@@ -273,6 +280,7 @@ fn binary_operator(pair: Pair<Rule>) -> ExprType {
     let op = children.next().unwrap().as_rule();
     let rhs = expression(children.next().unwrap());
     match op {
+        Rule::sub => ExprType::Sub(Box::new(lhs), Box::new(rhs)),
         Rule::div => ExprType::Div(Box::new(lhs), Box::new(rhs)),
         r => panic!("unexpected binary operator {:?}", r),
     }
@@ -283,9 +291,16 @@ fn unary_operator(pair: Pair<Rule>) -> ExprType {
     let op = children.next().unwrap().as_rule();
     let term = expression(children.next().unwrap());
     match op {
-        Rule::negative => ExprType::Negate(Box::new(term)),
+        Rule::negate => ExprType::Negate(Box::new(term)),
         r => panic!("unexpected unary operator {:?}", r),
     }
+}
+
+fn function_call(pair: Pair<Rule>) -> ExprType {
+    let mut children = pair.into_inner();
+    let iden = identifier(children.next().unwrap());
+    let exprs = children.map(expression).collect();
+    ExprType::FuncCall(iden, exprs)
 }
 
 fn identifier(pair: Pair<Rule>) -> Identifier {

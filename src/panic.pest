@@ -23,7 +23,7 @@ binop         =   { factor ~ (compare | arith) ~ factor }
 compare       =  _{ lt | le | eq | ne | ge | gt }
 arith         =  _{ sub | div | rem }
 factor        =  _{ unary | term }
-unary         =   { negative ~ term }
+unary         =   { negate ~ term }
 term          =  _{ func_call | primary }
 
 lt            =   { "<"  }
@@ -35,10 +35,10 @@ gt            =   { ">"  }
 sub           =   { "-"  }
 div           =   { "/"  }
 rem           =   { "%"  }
-negative      =   { "-"  }
+negate        =   { "-"  }
 
 func_call     =   { ident ~ "(" ~ call_params? ~ ")" }
-call_params   =   { expr ~ ("," ~ expr)* ~ ","? }
+call_params   =  _{ expr ~ ("," ~ expr)* ~ ","? }
 primary       =  _{ ident | literal | paren }
 paren         =   { "(" ~ expr ~ ")" }
 ident         =  _{ !bare_keyword ~ identifier }
