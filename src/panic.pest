@@ -2,25 +2,28 @@ WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 
 program       =   { SOI ~ topdecl* ~ EOI }
 topdecl       =   { function }
-function      =   { "_fn_" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ type ~ stmt_block }
-type          =   { identifier | "()" }
+function      =   { "_fn_" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_ref ~ stmt_block }
+type_ref      =   { ident }
 func_params   =   { func_param ~ ("," ~ func_param)* ~ ","? }
-func_param    =   { ident ~ ":" ~ type }
+func_param    =   { ident ~ ":" ~ type_ref }
 stmt_block    =   { "{" ~ stmt* ~ "}" }
 
-stmt          =   { ";" | let_stmt | return_stmt | if_stmt | expr_stmt }
-let_stmt      =   { "_let_" ~ ident ~ ":" ~ type ~ "=" ~ expr ~ ";" }
+stmt          =   { empty_stmt | let_stmt | return_stmt | if_stmt | expr_stmt }
+empty_stmt    =   { ";" }
+let_stmt      =   { "_let_" ~ ident ~ ":" ~ type_ref ~ "=" ~ expr ~ ";" }
 expr_stmt     =   { expr ~ ";" }
 return_stmt   =   { "_return_" ~ expr ~ ";" }
 if_stmt       =   { "_if_" ~ expr ~ stmt_block ~ ( "_else_" ~ ( stmt_block | if_stmt ) )? }
 
-expr          =   { associative | binop }
+expr          =   { associative | binop | factor }
 associative   =  _{ addops | mulops }
-addops        =  _{ unary ~ (add ~ unary)+ }
-mulops        =  _{ unary ~ (mul ~ unary)+ }
-binop         =  _{ unary ~ (compare | sub | div | rem ) ~ unary  }
+addops        =   { factor ~ ("+" ~ factor)+ }
+mulops        =   { factor ~ ("*" ~ factor)+ }
+binop         =   { factor ~ (compare | arith) ~ factor }
 compare       =  _{ lt | le | eq | ne | ge | gt }
-unary         =  _{ negative? ~ term }
+arith         =  _{ sub | div | rem }
+factor        =  _{ unary | term }
+unary         =   { negative ~ term }
 term          =  _{ func_call | primary }
 
 lt            =   { "<"  }
@@ -29,9 +32,7 @@ eq            =   { "==" }
 ne            =   { "!=" }
 ge            =   { ">=" }
 gt            =   { ">"  }
-add           =   { "+"  }
 sub           =   { "-"  }
-mul           =   { "*"  }
 div           =   { "/"  }
 rem           =   { "%"  }
 negative      =   { "-"  }
@@ -40,15 +41,13 @@ func_call     =   { ident ~ "(" ~ call_params? ~ ")" }
 call_params   =   { expr ~ ("," ~ expr)* ~ ","? }
 primary       =  _{ ident | literal | paren }
 paren         =   { "(" ~ expr ~ ")" }
-ident         =  _{ !keyword ~ identifier }
-literal       =  _{ int_literal | truelit | falselit | unitlit }
-truelit       =   { "true"  }
-falselit      =   { "false" }
-unitlit       =   { "()"    }
-
+ident         =  _{ !bare_keyword ~ identifier }
+literal       =  _{ int_literal | bool_literal }
 int_literal   =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
-identifier    =  @{ XID_START ~ XID_CONTINUE* }
-keyword       =  @{ "true" | "false" }
+bool_literal  =  @{ "true" | "false" }
+
+bare_keyword  =  @{ "true" | "false" }
+identifier    =  @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 
 str_literal   =  @{ "\"" ~ str_inner ~ "\"" }
 str_inner     =  @{ (!("\"" | "\\") ~ ANY)* ~ (str_escape ~ str_inner)? }

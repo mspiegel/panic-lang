@@ -1,4 +1,3 @@
-
 _fn_ arithmetic1(x: i32, y: i32) -> i32 {
    _return_ x + y;
 }
@@ -21,4 +20,8 @@ _fn_ arithmetic5(x: i32, y: i32) -> i32 {
 
 _fn_ arithmetic6(x: i32, y: i32) -> i32 {
    _return_ x / ( y / x );
+}
+
+_fn_ arithmetic7(x: i32) -> i32 {
+   _return_ -x ;
 }
