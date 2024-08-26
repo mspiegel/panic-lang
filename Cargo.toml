@@ -3,6 +3,10 @@ name = "panic-lang"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "pani"
+path = "src/interpreter/main.rs"
+
 [dependencies]
 num-bigint = "0.4"
 pest = "2.7"
