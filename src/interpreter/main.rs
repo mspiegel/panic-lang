@@ -19,15 +19,7 @@ fn main() {
 
     print_ascii_tree(pairs.clone());
 
-    let program = program(
-        pairs
-            .into_iter()
-            .next()
-            .unwrap()
-            .into_iter()
-            .next()
-            .unwrap(),
-    );
+    let program = program(pairs.into_iter().next().unwrap().next().unwrap());
 
     println!("syntax tree {:#?}", program);
 }
