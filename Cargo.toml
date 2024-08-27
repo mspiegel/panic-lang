@@ -7,7 +7,12 @@ edition = "2021"
 name = "pani"
 path = "src/interpreter/main.rs"
 
+[[bin]]
+name = "panic"
+path = "src/compiler/main.rs"
+
 [dependencies]
+clap = { version = "4.5", features = [ "derive" ] }
 num-bigint = "0.4"
 pest = "2.7"
 pest_derive = "2.7"
