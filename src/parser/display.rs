@@ -29,8 +29,8 @@ impl Display for TopDecl {
     }
 }
 
-fn fmt_vec<T: Display>(
-    elements: &Vec<T>,
+fn fmt_slice<T: Display>(
+    elements: &[T],
     sep: &str,
     formatter: &mut Formatter<'_>,
 ) -> std::fmt::Result {
@@ -48,8 +48,8 @@ impl Display for FunctionDecl {
         let precision = formatter.precision().unwrap_or_default();
         indent(formatter, precision)?;
         write!(formatter, "_fn_ {}(", self.ident)?;
-        fmt_vec(&self.params, ", ", formatter)?;
-        write!(formatter, ") -> {} {{\n", self.return_type)?;
+        fmt_slice(&self.params, ", ", formatter)?;
+        writeln!(formatter, ") -> {} {{", self.return_type)?;
         for stmt in self.stmts.iter() {
             write!(formatter, "{:.*}", precision + 1, stmt)?;
         }
@@ -70,11 +70,11 @@ impl Display for Stmt {
         let precision = formatter.precision().unwrap_or_default();
         indent(formatter, precision)?;
         match self {
-            Stmt::Empty(_) => write!(formatter, ";\n"),
-            Stmt::Let(stmt) => write!(formatter, "{:.*};\n", precision, stmt),
-            Stmt::Return(stmt) => write!(formatter, "{:.*};\n", precision, stmt),
+            Stmt::Empty(_) => writeln!(formatter, ";"),
+            Stmt::Let(stmt) => writeln!(formatter, "{:.*};", precision, stmt),
+            Stmt::Return(stmt) => writeln!(formatter, "{:.*};", precision, stmt),
             Stmt::If(stmt) => write!(formatter, "{:.*}", precision, stmt),
-            Stmt::Expr(stmt) => write!(formatter, "{:.*};\n", precision, stmt),
+            Stmt::Expr(stmt) => writeln!(formatter, "{:.*};", precision, stmt),
         }
     }
 }
@@ -98,7 +98,7 @@ impl Display for ReturnStmt {
 impl Display for IfStmt {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         let precision = formatter.precision().unwrap_or_default();
-        write!(formatter, "_if_ {} {{\n", self.test)?;
+        writeln!(formatter, "_if_ {} {{", self.test)?;
         for stmt in self.then_statements.iter() {
             write!(formatter, "{:.*}", precision + 1, stmt)?;
         }
@@ -106,14 +106,14 @@ impl Display for IfStmt {
         match &self.else_statements {
             Else::ElseIf(if_stmt) => write!(formatter, "}} else {:.*}", precision, if_stmt)?,
             Else::ElseStatements(stmts) => {
-                write!(formatter, "}} else {{\n")?;
+                writeln!(formatter, "}} else {{")?;
                 for stmt in stmts.iter() {
                     write!(formatter, "{:.*}", precision + 1, stmt)?;
                 }
                 indent(formatter, precision)?;
-                write!(formatter, "}}\n")?;
+                writeln!(formatter, "}}")?;
             }
-            Else::Empty() => write!(formatter, "}}\n")?,
+            Else::Empty() => writeln!(formatter, "}}")?,
         }
         Ok(())
     }
@@ -133,12 +133,12 @@ impl Display for Expr {
             ExprType::VarReference(iden) => write!(formatter, "{}", iden),
             ExprType::FuncCall(iden, args) => {
                 write!(formatter, "{}(", iden)?;
-                fmt_vec(args, ", ", formatter)?;
+                fmt_slice(args, ", ", formatter)?;
                 write!(formatter, ")")
             }
-            ExprType::Add(exprs) => fmt_vec(exprs, " + ", formatter),
+            ExprType::Add(exprs) => fmt_slice(exprs, " + ", formatter),
             ExprType::Sub(lhs, rhs) => write!(formatter, "{} - {}", lhs, rhs),
-            ExprType::Mul(exprs) => fmt_vec(exprs, " * ", formatter),
+            ExprType::Mul(exprs) => fmt_slice(exprs, " * ", formatter),
             ExprType::Div(lhs, rhs) => write!(formatter, "{} / {}", lhs, rhs),
             ExprType::Negate(expr) => write!(formatter, "-{}", expr),
             ExprType::Paren(expr) => write!(formatter, "({})", expr),
