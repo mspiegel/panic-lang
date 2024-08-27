@@ -335,3 +335,60 @@ fn identifier(pair: Pair<Rule>) -> Identifier {
     let name = String::from(pair.as_span().as_str());
     Identifier { name, span }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Read;
+    use std::panic;
+
+    use crate::parser::peg_grammar::PanicParser;
+
+    use super::*;
+
+    #[test]
+    fn test_valid() {
+        let path = "tests/valid";
+        let entries = std::fs::read_dir(path).unwrap();
+        for entry in entries {
+            let entry = entry.expect("error reading directory");
+            let mut file = std::fs::File::open(entry.path()).expect("error opening file");
+            let mut input = Vec::new();
+            file.read_to_end(&mut input).expect("error reading file");
+            let input = String::from_utf8(input).expect("error converting file to string");
+            let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input)
+                .expect("error parsing file");
+            let top_node = pairs.next().unwrap();
+            _ = program(top_node);
+        }
+    }
+
+    fn catch_unwind_silent<F: FnOnce() -> R + panic::UnwindSafe, R>(
+        f: F,
+    ) -> std::thread::Result<R> {
+        let prev_hook = panic::take_hook();
+        panic::set_hook(Box::new(|_| {}));
+        let result = panic::catch_unwind(f);
+        panic::set_hook(prev_hook);
+        result
+    }
+
+    #[test]
+    fn test_invalid() {
+        let path = "tests/invalid";
+        let entries = std::fs::read_dir(path).unwrap();
+        for entry in entries {
+            let entry = entry.expect("error reading directory");
+            let mut file = std::fs::File::open(entry.path()).expect("error opening file");
+            let mut input = Vec::new();
+            file.read_to_end(&mut input).expect("error reading file");
+            let input = String::from_utf8(input).expect("error converting file to string");
+            let result = catch_unwind_silent(|| {
+                let mut pairs =
+                    <PanicParser as pest::Parser<_>>::parse(Rule::program, &input).unwrap();
+                let top_node = pairs.next().unwrap();
+                _ = program(top_node);
+            });
+            assert!(result.is_err());
+        }
+    }
+}
