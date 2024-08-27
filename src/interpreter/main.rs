@@ -2,7 +2,7 @@ use std::io;
 use std::io::BufRead;
 
 use pest::Parser;
-use pest_ascii_tree::print_ascii_tree;
+//use pest_ascii_tree::print_ascii_tree;
 
 use panic_lang::parser::peg_grammar::*;
 use panic_lang::parser::syntax_tree::*;
@@ -16,10 +16,9 @@ fn main() {
     if pairs.is_err() {
         panic!("{}", pairs.unwrap_err());
     }
-
-    print_ascii_tree(pairs.clone());
+    //    print_ascii_tree(pairs.clone());
 
     let program = program(pairs.into_iter().next().unwrap().next().unwrap());
 
-    println!("syntax tree {:#?}", program);
+    println!("{}", program);
 }
