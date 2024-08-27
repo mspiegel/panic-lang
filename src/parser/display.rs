@@ -104,7 +104,7 @@ impl Display for IfStmt {
         }
         indent(formatter, precision)?;
         match &self.else_statements {
-            Else::ElseIf(if_stmt) => write!(formatter, "}} else {:.*}", precision + 1, if_stmt)?,
+            Else::ElseIf(if_stmt) => write!(formatter, "}} else {:.*}", precision, if_stmt)?,
             Else::ElseStatements(stmts) => {
                 write!(formatter, "}} else {{\n")?;
                 for stmt in stmts.iter() {
@@ -113,7 +113,7 @@ impl Display for IfStmt {
                 indent(formatter, precision)?;
                 write!(formatter, "}}\n")?;
             }
-            Else::Empty(_) => write!(formatter, "}}\n")?,
+            Else::Empty() => write!(formatter, "}}\n")?,
         }
         Ok(())
     }

@@ -1,0 +1,12 @@
+_fn_ statements() -> i32 {
+    _let_ x: i32 = 1;
+    _if_ false {
+        foo();
+        bar();
+        _return_ x + 1;
+    } _else_ _if_ true {
+        _return_ x;
+    } _else_ {
+        _return_ x - 1;
+    }
+}

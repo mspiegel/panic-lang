@@ -107,7 +107,7 @@ pub struct IfStmt {
 pub enum Else {
     ElseIf(Box<IfStmt>),
     ElseStatements(Vec<Stmt>),
-    Empty(SpanPair),
+    Empty(),
 }
 
 #[derive(Debug)]
@@ -201,6 +201,7 @@ fn statement(pair: Pair<Rule>) -> Stmt {
     match child.as_rule() {
         Rule::empty_stmt => Stmt::Empty(child.as_span().into()),
         Rule::let_stmt => Stmt::Let(let_statement(child)),
+        Rule::if_stmt => Stmt::If(if_statement(child)),
         Rule::return_stmt => Stmt::Return(return_statement(child)),
         Rule::expr_stmt => Stmt::Expr(expr_statement(child)),
         r => panic!("unexpected statement rule {:?}", r),
@@ -218,6 +219,27 @@ fn let_statement(pair: Pair<Rule>) -> LetStmt {
         type_ref,
         expr,
         span,
+    }
+}
+
+fn if_statement(pair: Pair<Rule>) -> IfStmt {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let test = expression(children.next().unwrap());
+    let then_statements = statement_block(children.next().unwrap());
+    let child = children.next();
+    let rule = child.as_ref().map(|p| p.as_rule());
+    let else_statements = match rule {
+        None => Else::Empty(),
+        Some(Rule::stmt_block) => Else::ElseStatements(statement_block(child.unwrap())),
+        Some(Rule::if_stmt) => Else::ElseIf(Box::new(if_statement(child.unwrap()))),
+        Some(r) => panic!("unexpected else if rule {:?}", r),
+    };
+    IfStmt {
+        span,
+        test,
+        then_statements,
+        else_statements,
     }
 }
 
@@ -240,6 +262,7 @@ fn expression(mut pair: Pair<Rule>) -> Expr {
     }
     let expr = match pair.as_rule() {
         Rule::int_literal => int_literal(pair),
+        Rule::bool_literal => bool_literal(pair),
         Rule::addops => add_operator(pair),
         Rule::mulops => mul_operator(pair),
         Rule::identifier => var_reference(pair),
@@ -260,6 +283,10 @@ fn int_literal(pair: Pair<Rule>) -> ExprType {
     ExprType::IntLiteral(
         BigInt::from_str(pair.as_span().as_str()).expect("invalid integer literal"),
     )
+}
+
+fn bool_literal(pair: Pair<Rule>) -> ExprType {
+    ExprType::BoolLiteral(bool::from_str(pair.as_span().as_str()).expect("invalid boolean literal"))
 }
 
 fn var_reference(pair: Pair<Rule>) -> ExprType {
