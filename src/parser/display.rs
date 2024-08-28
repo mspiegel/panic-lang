@@ -104,9 +104,9 @@ impl Display for IfStmt {
         }
         indent(formatter, precision)?;
         match &self.else_statements {
-            Else::ElseIf(if_stmt) => write!(formatter, "}} else {:.*}", precision, if_stmt)?,
+            Else::ElseIf(if_stmt) => write!(formatter, "}} _else_ {:.*}", precision, if_stmt)?,
             Else::ElseStatements(stmts) => {
-                writeln!(formatter, "}} else {{")?;
+                writeln!(formatter, "}} _else_ {{")?;
                 for stmt in stmts.iter() {
                     write!(formatter, "{:.*}", precision + 1, stmt)?;
                 }
@@ -156,6 +156,38 @@ impl Display for TypeRef {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             TypeRef::TypeName(identifier) => write!(formatter, "{}", identifier),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Read;
+
+    use crate::parser::peg_grammar::PanicParser;
+    use crate::parser::peg_grammar::Rule;
+
+    use super::*;
+
+    #[test]
+    fn test_roundtrip() {
+        let path = "tests/valid";
+        let entries = std::fs::read_dir(path).unwrap();
+        for entry in entries {
+            let entry = entry.expect("error reading directory");
+            let mut file = std::fs::File::open(entry.path()).expect("error opening file");
+            let mut input = Vec::new();
+            file.read_to_end(&mut input).expect("error reading file");
+            let input = String::from_utf8(input).expect("error converting file to string");
+            let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input)
+                .expect("error parsing file");
+            let top_node = pairs.next().unwrap();
+            let syntax_tree = program(top_node).expect("error generating syntax tree");
+            let text = format!("{}", syntax_tree);
+            let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &text)
+                .expect("error parsing file");
+            let top_node = pairs.next().unwrap();
+            assert!(program(top_node).is_ok());
         }
     }
 }
