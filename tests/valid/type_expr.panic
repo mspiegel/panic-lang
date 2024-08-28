@@ -1,0 +1,7 @@
+_fn_ fn1(foo_or_bar: (Foo | Bar)) -> i32 {
+    _return_ 0;
+}
+
+_fn_ fn2(foo_and_bar: (Foo & Bar)) -> i32 {
+    _return_ 0;
+}

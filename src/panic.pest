@@ -2,15 +2,18 @@ WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 
 program       =   { SOI ~ topdecl* ~ EOI }
 topdecl       =   { function }
-function      =   { "_fn_" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_ref ~ stmt_block }
+function      =   { "_fn_" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_expr ~ stmt_block }
+type_expr     =   { type_or | type_and | type_ref }
+type_or       =   { "(" ~ type_expr ~ ( "|" ~ type_expr )+ ~ ")" }
+type_and      =   { "(" ~ type_expr ~ ( "&" ~ type_expr )+ ~ ")" }
 type_ref      =   { ident }
 func_params   =   { func_param ~ ("," ~ func_param)* ~ ","? }
-func_param    =   { ident ~ ":" ~ type_ref }
+func_param    =   { ident ~ ":" ~ type_expr }
 stmt_block    =   { "{" ~ stmt* ~ "}" }
 
 stmt          =   { empty_stmt | let_stmt | return_stmt | if_stmt | expr_stmt }
 empty_stmt    =   { ";" }
-let_stmt      =   { "_let_" ~ ident ~ ":" ~ type_ref ~ "=" ~ expr ~ ";" }
+let_stmt      =   { "_let_" ~ ident ~ ":" ~ type_expr ~ "=" ~ expr ~ ";" }
 expr_stmt     =   { expr ~ ";" }
 return_stmt   =   { "_return_" ~ expr ~ ";" }
 if_stmt       =   { "_if_" ~ expr ~ stmt_block ~ ( "_else_" ~ ( stmt_block | if_stmt ) )? }

@@ -31,6 +31,19 @@ impl From<Span<'_>> for SpanPair {
 }
 
 #[derive(Debug)]
+pub struct TypeExpr {
+    pub typ: TypeExprEnum,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub enum TypeExprEnum {
+    Ref(TypeRef),
+    And(Vec<TypeExpr>),
+    Or(Vec<TypeExpr>),
+}
+
+#[derive(Debug)]
 pub enum TypeRef {
     TypeName(Identifier),
 }
@@ -56,7 +69,7 @@ pub enum TopDecl {
 pub struct FunctionDecl {
     pub ident: Identifier,
     pub params: Vec<FuncParamDecl>,
-    pub return_type: TypeRef,
+    pub return_type: TypeExpr,
     pub stmts: Vec<Stmt>,
     pub span: SpanPair,
 }
@@ -64,7 +77,7 @@ pub struct FunctionDecl {
 #[derive(Debug)]
 pub struct FuncParamDecl {
     pub ident: Identifier,
-    pub type_ref: TypeRef,
+    pub type_expr: TypeExpr,
     pub span: SpanPair,
 }
 
@@ -92,7 +105,7 @@ pub struct ExprStmt {
 #[derive(Debug)]
 pub struct LetStmt {
     pub ident: Identifier,
-    pub type_ref: TypeRef,
+    pub type_expr: TypeExpr,
     pub expr: Expr,
     pub span: SpanPair,
 }
@@ -166,7 +179,7 @@ fn function_decl(pair: Pair<Rule>) -> Result<FunctionDecl, PanicLangError> {
     } else {
         vec![]
     };
-    let return_type = type_reference(next)?;
+    let return_type = type_expression(next)?;
     let stmts = statement_block(children.next().unwrap())?;
     Ok(FunctionDecl {
         ident,
@@ -187,18 +200,48 @@ fn func_param_decl(pair: Pair<Rule>) -> Result<FuncParamDecl, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
-    let type_ref = type_reference(children.next().unwrap())?;
+    let type_expr = type_expression(children.next().unwrap())?;
     Ok(FuncParamDecl {
         ident,
-        type_ref,
+        type_expr,
         span,
     })
 }
 
-fn type_reference(pair: Pair<Rule>) -> Result<TypeRef, PanicLangError> {
-    Ok(TypeRef::TypeName(identifier(
+fn type_expression(pair: Pair<Rule>) -> Result<TypeExpr, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let child = children.next().unwrap();
+    let typ = match child.as_rule() {
+        Rule::type_and => type_and(child),
+        Rule::type_or => type_or(child),
+        Rule::type_ref => type_reference(child),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected type expression rule {:?}", r))
+            .into(),
+    }?;
+    Ok(TypeExpr { typ, span })
+}
+
+fn type_and(pair: Pair<Rule>) -> Result<TypeExprEnum, PanicLangError> {
+    Ok(TypeExprEnum::And(
+        pair.into_inner()
+            .map(type_expression)
+            .collect::<Result<Vec<_>, _>>()?,
+    ))
+}
+
+fn type_or(pair: Pair<Rule>) -> Result<TypeExprEnum, PanicLangError> {
+    Ok(TypeExprEnum::Or(
+        pair.into_inner()
+            .map(type_expression)
+            .collect::<Result<Vec<_>, _>>()?,
+    ))
+}
+
+fn type_reference(pair: Pair<Rule>) -> Result<TypeExprEnum, PanicLangError> {
+    Ok(TypeExprEnum::Ref(TypeRef::TypeName(identifier(
         pair.into_inner().next().unwrap(),
-    )?))
+    )?)))
 }
 
 fn statement_block(pair: Pair<Rule>) -> Result<Vec<Stmt>, PanicLangError> {
@@ -223,11 +266,11 @@ fn let_statement(pair: Pair<Rule>) -> Result<LetStmt, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
-    let type_ref = type_reference(children.next().unwrap())?;
+    let type_expr = type_expression(children.next().unwrap())?;
     let expr = expression(children.next().unwrap())?;
     Ok(LetStmt {
         ident,
-        type_ref,
+        type_expr,
         expr,
         span,
     })

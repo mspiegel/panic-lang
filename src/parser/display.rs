@@ -61,7 +61,7 @@ impl Display for FunctionDecl {
 
 impl Display for FuncParamDecl {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{}: {}", self.ident, self.type_ref)
+        write!(formatter, "{}: {}", self.ident, self.type_expr)
     }
 }
 
@@ -84,7 +84,7 @@ impl Display for LetStmt {
         write!(
             formatter,
             "_let_ {}: {} = {}",
-            self.ident, self.type_ref, self.expr
+            self.ident, self.type_expr, self.expr
         )
     }
 }
@@ -122,6 +122,24 @@ impl Display for IfStmt {
 impl Display for ExprStmt {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         write!(formatter, "{}", self.expr)
+    }
+}
+
+impl Display for TypeExpr {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.typ {
+            TypeExprEnum::Ref(reference) => write!(formatter, "{}", reference),
+            TypeExprEnum::And(exprs) => {
+                write!(formatter, "( ")?;
+                fmt_slice(exprs, " & ", formatter)?;
+                write!(formatter, " )")
+            }
+            TypeExprEnum::Or(exprs) => {
+                write!(formatter, "( ")?;
+                fmt_slice(exprs, " | ", formatter)?;
+                write!(formatter, " )")
+            }
+        }
     }
 }
 
