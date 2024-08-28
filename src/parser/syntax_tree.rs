@@ -6,6 +6,7 @@ use num_bigint::BigInt;
 use pest::iterators::Pair;
 use pest::Span;
 
+use crate::error::PanicLangError;
 use crate::parser::peg_grammar::Rule;
 
 pub struct SpanPair {
@@ -130,132 +131,149 @@ pub enum ExprType {
     Paren(Box<Expr>),
 }
 
-pub fn program(pair: Pair<Rule>) -> Program {
+pub fn program(pair: Pair<Rule>) -> Result<Program, PanicLangError> {
     let mut decls = vec![];
     let span = pair.as_span().into();
     for child in pair.into_inner() {
         match child.as_rule() {
-            Rule::topdecl => decls.push(top_decl(child)),
+            Rule::topdecl => decls.push(top_decl(child)?),
             Rule::EOI => {}
             r => {
-                panic!("unexpected program rule {:?}", r);
+                return Err(PanicLangError::SyntaxTreeError(format!(
+                    "unexpected program rule {:?}",
+                    r
+                )));
             }
         };
     }
-    Program { decls, span }
+    Ok(Program { decls, span })
 }
 
-fn top_decl(pair: Pair<Rule>) -> TopDecl {
-    TopDecl::Func(function_decl(pair.into_inner().next().unwrap()))
+fn top_decl(pair: Pair<Rule>) -> Result<TopDecl, PanicLangError> {
+    Ok(TopDecl::Func(function_decl(
+        pair.into_inner().next().unwrap(),
+    )?))
 }
 
-fn function_decl(pair: Pair<Rule>) -> FunctionDecl {
+fn function_decl(pair: Pair<Rule>) -> Result<FunctionDecl, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
-    let ident = identifier(children.next().unwrap());
+    let ident = identifier(children.next().unwrap())?;
     let mut next = children.next().unwrap();
     let params = if next.as_rule() == Rule::func_params {
         let params = next;
         next = children.next().unwrap();
-        func_params_decl(params)
+        func_params_decl(params)?
     } else {
         vec![]
     };
-    let return_type = type_reference(next);
-    let stmts = statement_block(children.next().unwrap());
-    FunctionDecl {
+    let return_type = type_reference(next)?;
+    let stmts = statement_block(children.next().unwrap())?;
+    Ok(FunctionDecl {
         ident,
         params,
         return_type,
         stmts,
         span,
-    }
+    })
 }
 
-fn func_params_decl(pair: Pair<Rule>) -> Vec<FuncParamDecl> {
-    pair.into_inner().map(func_param_decl).collect()
+fn func_params_decl(pair: Pair<Rule>) -> Result<Vec<FuncParamDecl>, PanicLangError> {
+    pair.into_inner()
+        .map(func_param_decl)
+        .collect::<Result<Vec<_>, _>>()
 }
 
-fn func_param_decl(pair: Pair<Rule>) -> FuncParamDecl {
+fn func_param_decl(pair: Pair<Rule>) -> Result<FuncParamDecl, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
-    let ident = identifier(children.next().unwrap());
-    let type_ref = type_reference(children.next().unwrap());
-    FuncParamDecl {
+    let ident = identifier(children.next().unwrap())?;
+    let type_ref = type_reference(children.next().unwrap())?;
+    Ok(FuncParamDecl {
         ident,
         type_ref,
         span,
-    }
+    })
 }
 
-fn type_reference(pair: Pair<Rule>) -> TypeRef {
-    TypeRef::TypeName(identifier(pair.into_inner().next().unwrap()))
+fn type_reference(pair: Pair<Rule>) -> Result<TypeRef, PanicLangError> {
+    Ok(TypeRef::TypeName(identifier(
+        pair.into_inner().next().unwrap(),
+    )?))
 }
 
-fn statement_block(pair: Pair<Rule>) -> Vec<Stmt> {
-    pair.into_inner().map(statement).collect()
+fn statement_block(pair: Pair<Rule>) -> Result<Vec<Stmt>, PanicLangError> {
+    pair.into_inner()
+        .map(statement)
+        .collect::<Result<Vec<_>, _>>()
 }
 
-fn statement(pair: Pair<Rule>) -> Stmt {
+fn statement(pair: Pair<Rule>) -> Result<Stmt, PanicLangError> {
     let child = pair.into_inner().next().unwrap();
     match child.as_rule() {
-        Rule::empty_stmt => Stmt::Empty(child.as_span().into()),
-        Rule::let_stmt => Stmt::Let(let_statement(child)),
-        Rule::if_stmt => Stmt::If(if_statement(child)),
-        Rule::return_stmt => Stmt::Return(return_statement(child)),
-        Rule::expr_stmt => Stmt::Expr(expr_statement(child)),
-        r => panic!("unexpected statement rule {:?}", r),
+        Rule::empty_stmt => Ok(Stmt::Empty(child.as_span().into())),
+        Rule::let_stmt => Ok(Stmt::Let(let_statement(child)?)),
+        Rule::if_stmt => Ok(Stmt::If(if_statement(child)?)),
+        Rule::return_stmt => Ok(Stmt::Return(return_statement(child)?)),
+        Rule::expr_stmt => Ok(Stmt::Expr(expr_statement(child)?)),
+        r => Err(PanicLangError::SyntaxTreeError(format!(
+            "unexpected statement rule {:?}",
+            r
+        ))),
     }
 }
 
-fn let_statement(pair: Pair<Rule>) -> LetStmt {
+fn let_statement(pair: Pair<Rule>) -> Result<LetStmt, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
-    let ident = identifier(children.next().unwrap());
-    let type_ref = type_reference(children.next().unwrap());
-    let expr = expression(children.next().unwrap());
-    LetStmt {
+    let ident = identifier(children.next().unwrap())?;
+    let type_ref = type_reference(children.next().unwrap())?;
+    let expr = expression(children.next().unwrap())?;
+    Ok(LetStmt {
         ident,
         type_ref,
         expr,
         span,
-    }
+    })
 }
 
-fn if_statement(pair: Pair<Rule>) -> IfStmt {
+fn if_statement(pair: Pair<Rule>) -> Result<IfStmt, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
-    let test = expression(children.next().unwrap());
-    let then_statements = statement_block(children.next().unwrap());
+    let test = expression(children.next().unwrap())?;
+    let then_statements = statement_block(children.next().unwrap())?;
     let child = children.next();
     let rule = child.as_ref().map(|p| p.as_rule());
     let else_statements = match rule {
-        None => Else::Empty(),
-        Some(Rule::stmt_block) => Else::ElseStatements(statement_block(child.unwrap())),
-        Some(Rule::if_stmt) => Else::ElseIf(Box::new(if_statement(child.unwrap()))),
-        Some(r) => panic!("unexpected else if rule {:?}", r),
-    };
-    IfStmt {
+        None => Ok(Else::Empty()),
+        Some(Rule::stmt_block) => Ok(Else::ElseStatements(statement_block(child.unwrap())?)),
+        Some(Rule::if_stmt) => Ok(Else::ElseIf(Box::new(if_statement(child.unwrap())?))),
+        Some(r) => Err(PanicLangError::SyntaxTreeError(format!(
+            "unexpected else if rule {:?}",
+            r
+        ))),
+    }?;
+    Ok(IfStmt {
         span,
         test,
         then_statements,
         else_statements,
-    }
+    })
 }
 
-fn return_statement(pair: Pair<Rule>) -> ReturnStmt {
+fn return_statement(pair: Pair<Rule>) -> Result<ReturnStmt, PanicLangError> {
     let span = pair.as_span().into();
-    let expr = expression(pair.into_inner().next().unwrap());
-    ReturnStmt { expr, span }
+    let expr = expression(pair.into_inner().next().unwrap())?;
+    Ok(ReturnStmt { expr, span })
 }
 
-fn expr_statement(pair: Pair<Rule>) -> ExprStmt {
+fn expr_statement(pair: Pair<Rule>) -> Result<ExprStmt, PanicLangError> {
     let span = pair.as_span().into();
-    let expr = expression(pair.into_inner().next().unwrap());
-    ExprStmt { expr, span }
+    let expr = expression(pair.into_inner().next().unwrap())?;
+    Ok(ExprStmt { expr, span })
 }
 
-fn expression(mut pair: Pair<Rule>) -> Expr {
+fn expression(mut pair: Pair<Rule>) -> Result<Expr, PanicLangError> {
     let span = pair.as_span().into();
     if pair.as_rule() == Rule::expr {
         pair = pair.into_inner().next().unwrap();
@@ -270,76 +288,100 @@ fn expression(mut pair: Pair<Rule>) -> Expr {
         Rule::unary => unary_operator(pair),
         Rule::paren => paren(pair),
         Rule::func_call => function_call(pair),
-        r => panic!("unexpected expression rule {:?}", r),
-    };
-    Expr { expr, span }
+        r => Err(PanicLangError::SyntaxTreeError(format!(
+            "unexpected expression rule {:?}",
+            r
+        ))),
+    }?;
+    Ok(Expr { expr, span })
 }
 
-fn paren(pair: Pair<Rule>) -> ExprType {
-    ExprType::Paren(Box::new(expression(pair.into_inner().next().unwrap())))
+fn paren(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::Paren(Box::new(expression(
+        pair.into_inner().next().unwrap(),
+    )?)))
 }
 
-fn int_literal(pair: Pair<Rule>) -> ExprType {
-    ExprType::IntLiteral(
-        BigInt::from_str(pair.as_span().as_str()).expect("invalid integer literal"),
-    )
+fn int_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::IntLiteral(
+        BigInt::from_str(pair.as_span().as_str()).map_err(|e| {
+            PanicLangError::SyntaxTreeError(format!("invalid integer literal: {e}"))
+        })?,
+    ))
 }
 
-fn bool_literal(pair: Pair<Rule>) -> ExprType {
-    ExprType::BoolLiteral(bool::from_str(pair.as_span().as_str()).expect("invalid boolean literal"))
+fn bool_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::BoolLiteral(
+        bool::from_str(pair.as_span().as_str()).map_err(|e| {
+            PanicLangError::SyntaxTreeError(format!("invalid boolean literal: {e}"))
+        })?,
+    ))
 }
 
-fn var_reference(pair: Pair<Rule>) -> ExprType {
-    ExprType::VarReference(identifier(pair))
+fn var_reference(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::VarReference(identifier(pair)?))
 }
 
-fn add_operator(pair: Pair<Rule>) -> ExprType {
-    ExprType::Add(pair.into_inner().map(expression).collect())
+fn add_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::Add(
+        pair.into_inner()
+            .map(expression)
+            .collect::<Result<Vec<_>, _>>()?,
+    ))
 }
 
-fn mul_operator(pair: Pair<Rule>) -> ExprType {
-    ExprType::Mul(pair.into_inner().map(expression).collect())
+fn mul_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::Mul(
+        pair.into_inner()
+            .map(expression)
+            .collect::<Result<Vec<_>, _>>()?,
+    ))
 }
 
-fn binary_operator(pair: Pair<Rule>) -> ExprType {
+fn binary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let mut children = pair.into_inner();
-    let lhs = expression(children.next().unwrap());
+    let lhs = expression(children.next().unwrap())?;
     let op = children.next().unwrap().as_rule();
-    let rhs = expression(children.next().unwrap());
+    let rhs = expression(children.next().unwrap())?;
     match op {
-        Rule::sub => ExprType::Sub(Box::new(lhs), Box::new(rhs)),
-        Rule::div => ExprType::Div(Box::new(lhs), Box::new(rhs)),
-        r => panic!("unexpected binary operator {:?}", r),
+        Rule::sub => Ok(ExprType::Sub(Box::new(lhs), Box::new(rhs))),
+        Rule::div => Ok(ExprType::Div(Box::new(lhs), Box::new(rhs))),
+        r => Err(PanicLangError::SyntaxTreeError(format!(
+            "unexpected binary operator {:?}",
+            r
+        ))),
     }
 }
 
-fn unary_operator(pair: Pair<Rule>) -> ExprType {
+fn unary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let mut children = pair.into_inner();
     let op = children.next().unwrap().as_rule();
-    let term = expression(children.next().unwrap());
+    let term = expression(children.next().unwrap())?;
     match op {
-        Rule::negate => ExprType::Negate(Box::new(term)),
-        r => panic!("unexpected unary operator {:?}", r),
+        Rule::negate => Ok(ExprType::Negate(Box::new(term))),
+        r => Err(PanicLangError::SyntaxTreeError(format!(
+            "unexpected unary operator {:?}",
+            r
+        ))),
     }
 }
 
-fn function_call(pair: Pair<Rule>) -> ExprType {
+fn function_call(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let mut children = pair.into_inner();
-    let iden = identifier(children.next().unwrap());
-    let exprs = children.map(expression).collect();
-    ExprType::FuncCall(iden, exprs)
+    let iden = identifier(children.next().unwrap())?;
+    let exprs = children.map(expression).collect::<Result<Vec<_>, _>>()?;
+    Ok(ExprType::FuncCall(iden, exprs))
 }
 
-fn identifier(pair: Pair<Rule>) -> Identifier {
+fn identifier(pair: Pair<Rule>) -> Result<Identifier, PanicLangError> {
     let span = pair.as_span().into();
     let name = String::from(pair.as_span().as_str());
-    Identifier { name, span }
+    Ok(Identifier { name, span })
 }
 
 #[cfg(test)]
 mod tests {
     use std::io::Read;
-    use std::panic;
 
     use crate::parser::peg_grammar::PanicParser;
 
@@ -358,18 +400,8 @@ mod tests {
             let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input)
                 .expect("error parsing file");
             let top_node = pairs.next().unwrap();
-            _ = program(top_node);
+            assert!(program(top_node).is_ok());
         }
-    }
-
-    fn catch_unwind_silent<F: FnOnce() -> R + panic::UnwindSafe, R>(
-        f: F,
-    ) -> std::thread::Result<R> {
-        let prev_hook = panic::take_hook();
-        panic::set_hook(Box::new(|_| {}));
-        let result = panic::catch_unwind(f);
-        panic::set_hook(prev_hook);
-        result
     }
 
     #[test]
@@ -382,12 +414,8 @@ mod tests {
             let mut input = Vec::new();
             file.read_to_end(&mut input).expect("error reading file");
             let input = String::from_utf8(input).expect("error converting file to string");
-            let result = catch_unwind_silent(|| {
-                let mut pairs =
-                    <PanicParser as pest::Parser<_>>::parse(Rule::program, &input).unwrap();
-                let top_node = pairs.next().unwrap();
-                _ = program(top_node);
-            });
+            let pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input);
+            let result = pairs.map(|mut p| program(p.next().unwrap()));
             assert!(result.is_err());
         }
     }
