@@ -1,9 +1,9 @@
-use thiserror::Error;
-
 use crate::parser::peg_grammar::Rule;
 
-#[derive(Error, Debug)]
-pub enum PanicLangError {
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, thiserror::Error, thiserror_ext::Box)]
+#[thiserror_ext(newtype(name = PanicLangError))]
+pub enum PanicErrorImpl {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error("parser error")]
@@ -12,4 +12,10 @@ pub enum PanicLangError {
     SyntaxTreeError(String),
     #[error("unknown error")]
     Unknown,
+}
+
+impl<T> From<PanicErrorImpl> for Result<T, PanicLangError> {
+    fn from(val: PanicErrorImpl) -> Self {
+        Err(val.into())
+    }
 }

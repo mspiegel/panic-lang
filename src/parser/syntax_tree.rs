@@ -6,6 +6,7 @@ use num_bigint::BigInt;
 use pest::iterators::Pair;
 use pest::Span;
 
+use crate::error::PanicErrorImpl;
 use crate::error::PanicLangError;
 use crate::parser::peg_grammar::Rule;
 
@@ -139,10 +140,8 @@ pub fn program(pair: Pair<Rule>) -> Result<Program, PanicLangError> {
             Rule::topdecl => decls.push(top_decl(child)?),
             Rule::EOI => {}
             r => {
-                return Err(PanicLangError::SyntaxTreeError(format!(
-                    "unexpected program rule {:?}",
-                    r
-                )));
+                return PanicErrorImpl::SyntaxTreeError(format!("unexpected program rule {:?}", r))
+                    .into();
             }
         };
     }
@@ -216,10 +215,7 @@ fn statement(pair: Pair<Rule>) -> Result<Stmt, PanicLangError> {
         Rule::if_stmt => Ok(Stmt::If(if_statement(child)?)),
         Rule::return_stmt => Ok(Stmt::Return(return_statement(child)?)),
         Rule::expr_stmt => Ok(Stmt::Expr(expr_statement(child)?)),
-        r => Err(PanicLangError::SyntaxTreeError(format!(
-            "unexpected statement rule {:?}",
-            r
-        ))),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected statement rule {:?}", r)).into(),
     }
 }
 
@@ -248,10 +244,9 @@ fn if_statement(pair: Pair<Rule>) -> Result<IfStmt, PanicLangError> {
         None => Ok(Else::Empty()),
         Some(Rule::stmt_block) => Ok(Else::ElseStatements(statement_block(child.unwrap())?)),
         Some(Rule::if_stmt) => Ok(Else::ElseIf(Box::new(if_statement(child.unwrap())?))),
-        Some(r) => Err(PanicLangError::SyntaxTreeError(format!(
-            "unexpected else if rule {:?}",
-            r
-        ))),
+        Some(r) => {
+            PanicErrorImpl::SyntaxTreeError(format!("unexpected else if rule {:?}", r)).into()
+        }
     }?;
     Ok(IfStmt {
         span,
@@ -288,10 +283,7 @@ fn expression(mut pair: Pair<Rule>) -> Result<Expr, PanicLangError> {
         Rule::unary => unary_operator(pair),
         Rule::paren => paren(pair),
         Rule::func_call => function_call(pair),
-        r => Err(PanicLangError::SyntaxTreeError(format!(
-            "unexpected expression rule {:?}",
-            r
-        ))),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected expression rule {:?}", r)).into(),
     }?;
     Ok(Expr { expr, span })
 }
@@ -305,7 +297,7 @@ fn paren(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
 fn int_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     Ok(ExprType::IntLiteral(
         BigInt::from_str(pair.as_span().as_str()).map_err(|e| {
-            PanicLangError::SyntaxTreeError(format!("invalid integer literal: {e}"))
+            PanicErrorImpl::SyntaxTreeError(format!("invalid integer literal: {e}"))
         })?,
     ))
 }
@@ -313,7 +305,7 @@ fn int_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
 fn bool_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     Ok(ExprType::BoolLiteral(
         bool::from_str(pair.as_span().as_str()).map_err(|e| {
-            PanicLangError::SyntaxTreeError(format!("invalid boolean literal: {e}"))
+            PanicErrorImpl::SyntaxTreeError(format!("invalid boolean literal: {e}"))
         })?,
     ))
 }
@@ -346,10 +338,7 @@ fn binary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     match op {
         Rule::sub => Ok(ExprType::Sub(Box::new(lhs), Box::new(rhs))),
         Rule::div => Ok(ExprType::Div(Box::new(lhs), Box::new(rhs))),
-        r => Err(PanicLangError::SyntaxTreeError(format!(
-            "unexpected binary operator {:?}",
-            r
-        ))),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected binary operator {:?}", r)).into(),
     }
 }
 
@@ -359,10 +348,7 @@ fn unary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let term = expression(children.next().unwrap())?;
     match op {
         Rule::negate => Ok(ExprType::Negate(Box::new(term))),
-        r => Err(PanicLangError::SyntaxTreeError(format!(
-            "unexpected unary operator {:?}",
-            r
-        ))),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected unary operator {:?}", r)).into(),
     }
 }
 
