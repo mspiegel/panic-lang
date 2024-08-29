@@ -158,7 +158,10 @@ impl Display for Expr {
             ExprType::Sub(lhs, rhs) => write!(formatter, "{} - {}", lhs, rhs),
             ExprType::Mul(exprs) => fmt_slice(exprs, " * ", formatter),
             ExprType::Div(lhs, rhs) => write!(formatter, "{} / {}", lhs, rhs),
+            ExprType::And(exprs) => fmt_slice(exprs, " && ", formatter),
+            ExprType::Or(exprs) => fmt_slice(exprs, " || ", formatter),
             ExprType::Negate(expr) => write!(formatter, "-{}", expr),
+            ExprType::Not(expr) => write!(formatter, "!{}", expr),
             ExprType::Paren(expr) => write!(formatter, "({})", expr),
         }
     }

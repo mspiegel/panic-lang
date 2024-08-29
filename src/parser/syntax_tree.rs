@@ -141,7 +141,10 @@ pub enum ExprType {
     Sub(Box<Expr>, Box<Expr>),
     Mul(Vec<Expr>),
     Div(Box<Expr>, Box<Expr>),
+    And(Vec<Expr>),
+    Or(Vec<Expr>),
     Negate(Box<Expr>),
+    Not(Box<Expr>),
     Paren(Box<Expr>),
 }
 
@@ -321,6 +324,8 @@ fn expression(mut pair: Pair<Rule>) -> Result<Expr, PanicLangError> {
         Rule::bool_literal => bool_literal(pair),
         Rule::addops => add_operator(pair),
         Rule::mulops => mul_operator(pair),
+        Rule::andops => and_operator(pair),
+        Rule::orops => or_operator(pair),
         Rule::identifier => var_reference(pair),
         Rule::binop => binary_operator(pair),
         Rule::unary => unary_operator(pair),
@@ -373,6 +378,22 @@ fn mul_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     ))
 }
 
+fn and_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::And(
+        pair.into_inner()
+            .map(expression)
+            .collect::<Result<Vec<_>, _>>()?,
+    ))
+}
+
+fn or_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    Ok(ExprType::Or(
+        pair.into_inner()
+            .map(expression)
+            .collect::<Result<Vec<_>, _>>()?,
+    ))
+}
+
 fn binary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let mut children = pair.into_inner();
     let lhs = expression(children.next().unwrap())?;
@@ -391,6 +412,7 @@ fn unary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let term = expression(children.next().unwrap())?;
     match op {
         Rule::negate => Ok(ExprType::Negate(Box::new(term))),
+        Rule::not => Ok(ExprType::Not(Box::new(term))),
         r => PanicErrorImpl::SyntaxTreeError(format!("unexpected unary operator {:?}", r)).into(),
     }
 }

@@ -19,14 +19,16 @@ return_stmt   =   { "_return_" ~ expr ~ ";" }
 if_stmt       =   { "_if_" ~ expr ~ stmt_block ~ ( "_else_" ~ ( stmt_block | if_stmt ) )? }
 
 expr          =   { associative | binop | factor }
-associative   =  _{ addops | mulops }
+associative   =  _{ addops | mulops | andops | orops }
 addops        =   { factor ~ ("+" ~ factor)+ }
 mulops        =   { factor ~ ("*" ~ factor)+ }
+andops        =   { factor ~ ("&&" ~ factor)+ }
+orops         =   { factor ~ ("||" ~ factor)+ }
 binop         =   { factor ~ (compare | arith) ~ factor }
 compare       =  _{ lt | le | eq | ne | ge | gt }
 arith         =  _{ sub | div | rem }
 factor        =  _{ unary | term }
-unary         =   { negate ~ term }
+unary         =   { (negate | not) ~ term }
 term          =  _{ func_call | primary }
 
 lt            =   { "<"  }
@@ -39,6 +41,7 @@ sub           =   { "-"  }
 div           =   { "/"  }
 rem           =   { "%"  }
 negate        =   { "-"  }
+not           =   { "!"  }
 
 func_call     =   { ident ~ "(" ~ call_params? ~ ")" }
 call_params   =  _{ expr ~ ("," ~ expr)* ~ ","? }

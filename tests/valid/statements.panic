@@ -1,10 +1,10 @@
 _fn_ statements() -> i32 {
     _let_ x: i32 = 1;
-    _if_ false {
+    _if_ false || !true {
         foo();
         bar();
         _return_ x + 1;
-    } _else_ _if_ true {
+    } _else_ _if_ true && !false {
         _return_ x;
     } _else_ {
         _return_ x - 1;
