@@ -129,12 +129,7 @@ impl Display for TypeExpr {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.typ {
             TypeExprEnum::Ref(reference) => write!(formatter, "{}", reference),
-            TypeExprEnum::And(exprs) => {
-                write!(formatter, "( ")?;
-                fmt_slice(exprs, " & ", formatter)?;
-                write!(formatter, " )")
-            }
-            TypeExprEnum::Or(exprs) => {
+            TypeExprEnum::Union(exprs) => {
                 write!(formatter, "( ")?;
                 fmt_slice(exprs, " | ", formatter)?;
                 write!(formatter, " )")

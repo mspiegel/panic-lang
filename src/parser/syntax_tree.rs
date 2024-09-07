@@ -39,8 +39,7 @@ pub struct TypeExpr {
 #[derive(Debug)]
 pub enum TypeExprEnum {
     Ref(TypeRef),
-    And(Vec<TypeExpr>),
-    Or(Vec<TypeExpr>),
+    Union(Vec<TypeRef>),
 }
 
 #[derive(Debug)]
@@ -216,35 +215,25 @@ fn type_expression(pair: Pair<Rule>) -> Result<TypeExpr, PanicLangError> {
     let mut children = pair.into_inner();
     let child = children.next().unwrap();
     let typ = match child.as_rule() {
-        Rule::type_and => type_and(child),
-        Rule::type_or => type_or(child),
-        Rule::type_ref => type_reference(child),
+        Rule::type_union => Ok(TypeExprEnum::Union(type_union(child)?)),
+        Rule::type_ref => Ok(TypeExprEnum::Ref(type_reference(child)?)),
         r => PanicErrorImpl::SyntaxTreeError(format!("unexpected type expression rule {:?}", r))
             .into(),
     }?;
     Ok(TypeExpr { typ, span })
 }
 
-fn type_and(pair: Pair<Rule>) -> Result<TypeExprEnum, PanicLangError> {
-    Ok(TypeExprEnum::And(
-        pair.into_inner()
-            .map(type_expression)
-            .collect::<Result<Vec<_>, _>>()?,
-    ))
+fn type_union(pair: Pair<Rule>) -> Result<Vec<TypeRef>, PanicLangError> {
+    Ok(pair
+        .into_inner()
+        .map(type_reference)
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
-fn type_or(pair: Pair<Rule>) -> Result<TypeExprEnum, PanicLangError> {
-    Ok(TypeExprEnum::Or(
-        pair.into_inner()
-            .map(type_expression)
-            .collect::<Result<Vec<_>, _>>()?,
-    ))
-}
-
-fn type_reference(pair: Pair<Rule>) -> Result<TypeExprEnum, PanicLangError> {
-    Ok(TypeExprEnum::Ref(TypeRef::TypeName(identifier(
+fn type_reference(pair: Pair<Rule>) -> Result<TypeRef, PanicLangError> {
+    Ok(TypeRef::TypeName(identifier(
         pair.into_inner().next().unwrap(),
-    )?)))
+    )?))
 }
 
 fn statement_block(pair: Pair<Rule>) -> Result<Vec<Stmt>, PanicLangError> {
