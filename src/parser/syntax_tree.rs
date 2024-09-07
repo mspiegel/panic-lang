@@ -140,6 +140,12 @@ pub enum ExprType {
     Sub(Box<Expr>, Box<Expr>),
     Mul(Vec<Expr>),
     Div(Box<Expr>, Box<Expr>),
+    Lt(Box<Expr>, Box<Expr>),
+    LtEq(Box<Expr>, Box<Expr>),
+    Eq(Box<Expr>, Box<Expr>),
+    NotEq(Box<Expr>, Box<Expr>),
+    GtEq(Box<Expr>, Box<Expr>),
+    Gt(Box<Expr>, Box<Expr>),
     And(Vec<Expr>),
     Or(Vec<Expr>),
     Negate(Box<Expr>),
@@ -393,6 +399,12 @@ fn binary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     match op {
         Rule::sub => Ok(ExprType::Sub(Box::new(lhs), Box::new(rhs))),
         Rule::div => Ok(ExprType::Div(Box::new(lhs), Box::new(rhs))),
+        Rule::lt => Ok(ExprType::Lt(Box::new(lhs), Box::new(rhs))),
+        Rule::le => Ok(ExprType::LtEq(Box::new(lhs), Box::new(rhs))),
+        Rule::eq => Ok(ExprType::Eq(Box::new(lhs), Box::new(rhs))),
+        Rule::ne => Ok(ExprType::NotEq(Box::new(lhs), Box::new(rhs))),
+        Rule::ge => Ok(ExprType::GtEq(Box::new(lhs), Box::new(rhs))),
+        Rule::gt => Ok(ExprType::Gt(Box::new(lhs), Box::new(rhs))),
         r => PanicErrorImpl::SyntaxTreeError(format!("unexpected binary operator {:?}", r)).into(),
     }
 }
