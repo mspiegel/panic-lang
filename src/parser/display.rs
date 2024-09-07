@@ -157,6 +157,7 @@ impl Display for Expr {
             ExprType::Or(exprs) => fmt_slice(exprs, " || ", formatter),
             ExprType::Negate(expr) => write!(formatter, "-{}", expr),
             ExprType::Not(expr) => write!(formatter, "!{}", expr),
+            ExprType::Question(expr) => write!(formatter, "{}?", expr),
             ExprType::Paren(expr) => write!(formatter, "({})", expr),
         }
     }

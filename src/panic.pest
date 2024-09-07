@@ -26,8 +26,9 @@ orops         =   { factor ~ ("||" ~ factor)+ }
 binop         =   { factor ~ (compare | arith) ~ factor }
 compare       =  _{ lt | le | eq | ne | ge | gt }
 arith         =  _{ sub | div | rem }
-factor        =  _{ unary | term }
-unary         =   { (negate | not) ~ term }
+factor        =  _{ prefix | suffix | term }
+prefix        =   { (negate | not) ~ term }
+suffix        =   { term ~ question }
 term          =  _{ func_call | primary }
 
 lt            =   { "<"  }
@@ -41,6 +42,7 @@ div           =   { "/"  }
 rem           =   { "%"  }
 negate        =   { "-"  }
 not           =   { "!"  }
+question      =   { "?"  }
 
 func_call     =   { ident ~ "(" ~ call_params? ~ ")" }
 call_params   =  _{ expr ~ ("," ~ expr)* ~ ","? }

@@ -144,6 +144,7 @@ pub enum ExprType {
     Or(Vec<Expr>),
     Negate(Box<Expr>),
     Not(Box<Expr>),
+    Question(Box<Expr>),
     Paren(Box<Expr>),
 }
 
@@ -317,7 +318,8 @@ fn expression(mut pair: Pair<Rule>) -> Result<Expr, PanicLangError> {
         Rule::orops => or_operator(pair),
         Rule::identifier => var_reference(pair),
         Rule::binop => binary_operator(pair),
-        Rule::unary => unary_operator(pair),
+        Rule::prefix => prefix_operator(pair),
+        Rule::suffix => suffix_operator(pair),
         Rule::paren => paren(pair),
         Rule::func_call => function_call(pair),
         r => PanicErrorImpl::SyntaxTreeError(format!("unexpected expression rule {:?}", r)).into(),
@@ -395,14 +397,26 @@ fn binary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     }
 }
 
-fn unary_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+fn prefix_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
     let mut children = pair.into_inner();
     let op = children.next().unwrap().as_rule();
     let term = expression(children.next().unwrap())?;
     match op {
         Rule::negate => Ok(ExprType::Negate(Box::new(term))),
         Rule::not => Ok(ExprType::Not(Box::new(term))),
-        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected unary operator {:?}", r)).into(),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected unary prefix operator {:?}", r))
+            .into(),
+    }
+}
+
+fn suffix_operator(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
+    let mut children = pair.into_inner();
+    let term = expression(children.next().unwrap())?;
+    let op = children.next().unwrap().as_rule();
+    match op {
+        Rule::question => Ok(ExprType::Question(Box::new(term))),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected unary suffix operator {:?}", r))
+            .into(),
     }
 }
 

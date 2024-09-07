@@ -22,8 +22,12 @@ _fn_ arithmetic6(x: i32, y: i32) -> i32 {
    _return_ x / ( y / x );
 }
 
-_fn_ arithmetic7(x: i32) -> i32 {
+_fn_ arithmetic7a(x: i32) -> i32 {
    _return_ -x ;
+}
+
+_fn_ arithmetic7b(x: i32) -> i32 {
+   _return_ x? ;
 }
 
 _fn_ arithmetic8(x: i32, y: i32) -> i32 {
