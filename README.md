@@ -27,3 +27,19 @@ Design goals for the Panic language:
   - your text editor or IDE can convert the unsightly characters to syntax highlighting
 
 Panic has been inspired by [Rust](https://www.rust-lang.org/), [Zig](https://ziglang.org/), [Pony](https://www.ponylang.io/), [Hylo](https://www.hylo-lang.org/), and other languages.
+
+## Current Status
+
+The interpreter can **parse** the following example:
+
+```
+_fn_ factorial(n : i32) -> (i32 | ExpectedNonNegative | ArithmeticOverflow | StackOverflow) {
+    _if_ n < 0 {
+        _return_ ExpectedNonNegative;
+    } _else_ _if_ n == 0 {
+        _return_ 1;
+    } _else_ {
+        _return_ n * factorial((n - 1)?)?;
+    }
+}
+```
