@@ -20,11 +20,11 @@ impl Display for Program {
     }
 }
 
-impl Display for TopDecl {
+impl Display for Decl {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         let precision = formatter.precision().unwrap_or_default();
         match self {
-            TopDecl::Func(func) => write!(formatter, "{:.*}", precision, func),
+            Decl::Func(func) => write!(formatter, "{:.*}", precision, func),
         }
     }
 }
@@ -47,7 +47,8 @@ impl Display for FunctionDecl {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         let precision = formatter.precision().unwrap_or_default();
         indent(formatter, precision)?;
-        write!(formatter, "_fn_ {}(", self.ident)?;
+        write!(formatter, "_decl_ {} ", self.ident)?;
+        write!(formatter, "_fn_ (")?;
         fmt_slice(&self.params, ", ", formatter)?;
         writeln!(formatter, ") -> {} {{", self.return_type)?;
         for stmt in self.stmts.iter() {

@@ -1,4 +1,4 @@
 
-_fn_ arithmetic2(x: i32, y: i32, z: i32) -> i32 {
+_decl_ arithmetic2 _fn_(x: i32, y: i32, z: i32) -> i32 {
    _return_ x / y / z;
 }

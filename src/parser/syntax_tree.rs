@@ -55,12 +55,12 @@ pub struct Identifier {
 
 #[derive(Debug)]
 pub struct Program {
-    pub decls: Vec<TopDecl>,
+    pub decls: Vec<Decl>,
     pub span: SpanPair,
 }
 
 #[derive(Debug)]
-pub enum TopDecl {
+pub enum Decl {
     Func(FunctionDecl),
 }
 
@@ -159,7 +159,7 @@ pub fn program(pair: Pair<Rule>) -> Result<Program, PanicLangError> {
     let span = pair.as_span().into();
     for child in pair.into_inner() {
         match child.as_rule() {
-            Rule::topdecl => decls.push(top_decl(child)?),
+            Rule::decl => decls.push(decl(child)?),
             Rule::EOI => {}
             r => {
                 return PanicErrorImpl::SyntaxTreeError(format!("unexpected program rule {:?}", r))
@@ -170,8 +170,8 @@ pub fn program(pair: Pair<Rule>) -> Result<Program, PanicLangError> {
     Ok(Program { decls, span })
 }
 
-fn top_decl(pair: Pair<Rule>) -> Result<TopDecl, PanicLangError> {
-    Ok(TopDecl::Func(function_decl(
+fn decl(pair: Pair<Rule>) -> Result<Decl, PanicLangError> {
+    Ok(Decl::Func(function_decl(
         pair.into_inner().next().unwrap(),
     )?))
 }

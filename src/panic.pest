@@ -1,8 +1,8 @@
 WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 
-program       =   { SOI ~ topdecl* ~ EOI }
-topdecl       =   { function }
-function      =   { "_fn_" ~ ident ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_expr ~ stmt_block }
+program       =   { SOI ~ decl* ~ EOI }
+decl          =   { fn_decl }
+fn_decl       =   { "_decl_" ~ ident ~ "_fn_" ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_expr ~ stmt_block }
 type_expr     =   { type_union | type_ref }
 type_union    =   { "(" ~ type_ref ~ ( "|" ~ type_ref )+ ~ ")" }
 type_ref      =   { ident }

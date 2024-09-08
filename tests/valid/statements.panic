@@ -1,4 +1,4 @@
-_fn_ statements() -> i32 {
+_decl_ statements _fn_() -> i32 {
     _let_ x: i32 = 1;
     _if_ false || !true {
         foo();

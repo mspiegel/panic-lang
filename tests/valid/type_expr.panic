@@ -1,3 +1,3 @@
-_fn_ fn1(foo_or_bar: (Foo | Bar)) -> i32 {
+_decl_ fn1 _fn_(foo_or_bar: (Foo | Bar)) -> i32 {
     _return_ 0;
 }
