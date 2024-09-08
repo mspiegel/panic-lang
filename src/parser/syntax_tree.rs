@@ -231,8 +231,7 @@ fn type_expression(pair: Pair<Rule>) -> Result<TypeExpr, PanicLangError> {
 }
 
 fn type_union(pair: Pair<Rule>) -> Result<Vec<TypeRef>, PanicLangError> {
-    pair
-        .into_inner()
+    pair.into_inner()
         .map(type_reference)
         .collect::<Result<Vec<_>, _>>()
 }
