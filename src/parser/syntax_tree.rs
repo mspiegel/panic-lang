@@ -231,10 +231,10 @@ fn type_expression(pair: Pair<Rule>) -> Result<TypeExpr, PanicLangError> {
 }
 
 fn type_union(pair: Pair<Rule>) -> Result<Vec<TypeRef>, PanicLangError> {
-    Ok(pair
+    pair
         .into_inner()
         .map(type_reference)
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 fn type_reference(pair: Pair<Rule>) -> Result<TypeRef, PanicLangError> {
