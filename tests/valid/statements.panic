@@ -10,3 +10,7 @@ _decl_ statements _fn_() -> i32 {
         _return_ x - 1;
     }
 }
+
+_decl_ main _fn_ () -> i32 {
+    _return_ 0;
+ }

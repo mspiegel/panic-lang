@@ -74,6 +74,13 @@ fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> 
     }
 }
 
+pub fn run_string(input: &str) -> Result<ExitCode, PanicLangError> {
+    let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input)?;
+    let top_node = pairs.next().unwrap();
+    let prog = program(top_node)?;
+    command_run(&input, prog)
+}
+
 fn main() -> Result<ExitCode, PanicLangError> {
     let cli = <Cli as clap::Parser>::parse();
 
@@ -90,5 +97,27 @@ fn main() -> Result<ExitCode, PanicLangError> {
         Command::Print => command_print(&input, prog),
         Command::Reduce => todo!(),
         Command::Run => command_run(&input, prog),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Read;
+
+    use super::*;
+
+    #[test]
+    fn test_valid() {
+        let path = "tests/valid";
+        let entries = std::fs::read_dir(path).unwrap();
+        for entry in entries {
+            let entry = entry.expect("error reading directory");
+            let mut file = std::fs::File::open(entry.path()).expect("error opening file");
+            let mut input = Vec::new();
+            file.read_to_end(&mut input).expect("error reading file");
+            let input = String::from_utf8(input).expect("error converting file to string");
+            let result = run_string(&input);
+            assert!(result.is_ok());
+        }
     }
 }

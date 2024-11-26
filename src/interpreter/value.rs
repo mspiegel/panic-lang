@@ -16,6 +16,17 @@ pub enum Value {
     StackOverflow(SpanPair),
 }
 
+impl Value {
+    pub fn is_error(&self) -> bool {
+        match self {
+            Value::ArithmeticOverflow(_) => true,
+            Value::ArithmeticDivisionByZero(_) => true,
+            Value::StackOverflow(_) => true,
+            _ => false,
+        }
+    }
+}
+
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

@@ -41,3 +41,7 @@ _decl_ arithmetic9 _fn_(x: i32, y: i32) -> i32 {
 _decl_ arithmetic10 _fn_(a: i32, b: i32, c: i32, d: i32) -> i32 {
    _return_ ((( a + b ) - c ) + d);
 }
+
+_decl_ main _fn_ () -> i32 {
+   _return_ 0;
+}

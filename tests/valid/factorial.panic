@@ -13,5 +13,15 @@ _decl_ main _fn_ () -> i32 {
     _debug(factorial(1));
     _debug(factorial(2));
     _debug(factorial(3));
+    _debug(factorial(4));
+    _debug(factorial(5));
+    _debug(factorial(6));
+    _debug(factorial(7));
+    _debug(factorial(8));
+    _debug(factorial(9));
+    _debug(factorial(10));
+    _debug(factorial(11));
+    _debug(factorial(12));
+    _debug(factorial(13));
     _return_ 0;
 }

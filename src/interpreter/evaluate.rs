@@ -9,6 +9,7 @@ use panic_lang::parser::syntax_tree::Else;
 use panic_lang::parser::syntax_tree::Expr;
 use panic_lang::parser::syntax_tree::ExprType;
 use panic_lang::parser::syntax_tree::FunctionDecl;
+use panic_lang::parser::syntax_tree::Identifier;
 use panic_lang::parser::syntax_tree::IfStmt;
 use panic_lang::parser::syntax_tree::Stmt;
 
@@ -113,6 +114,25 @@ pub fn evaluate_if_statement(
     Ok(())
 }
 
+fn evaluate_debug_expression(
+    iden: &Identifier,
+    params: &[Expr],
+    env: &Environment,
+    decls: &HashMap<String, Decl>,
+) -> Result<Value, ErrorOrReturn> {
+    if params.len() != 1 {
+        return Err(PanicErrorImpl::EvaluationError(format!(
+            "expected 1 parameter and received {} parameters at {:?}",
+            params.len(),
+            iden.span,
+        ))
+        .into());
+    }
+    let val = evaluate_expression(&params[0], env, decls)?;
+    println!("{:?}", val);
+    Ok(val)
+}
+
 pub fn evaluate_expression(
     expr: &Expr,
     env: &Environment,
@@ -128,6 +148,9 @@ pub fn evaluate_expression(
             .get(&var_ref.name, var_ref.span)
             .map_err(ErrorOrReturn::Error)?,
         ExprType::FuncCall(iden, params) => {
+            if iden.name == "_debug" {
+                return evaluate_debug_expression(iden, params, env, decls);
+            }
             let func = decls.get(&iden.name);
             let func = match func {
                 Some(decl) => decl,
@@ -475,7 +498,7 @@ pub fn evaluate_expression(
             for i in 0..exprs.len() {
                 let value = &values[i];
                 if let Value::Bool(val) = value {
-                    result &= val;
+                    result |= val;
                 } else {
                     return Err(PanicErrorImpl::EvaluationError(format!(
                         "cannot apply logical and {:?} at {:?}",
@@ -520,7 +543,10 @@ pub fn evaluate_expression(
         }
         ExprType::Question(inner) => {
             let val = evaluate_expression(inner, env, decls)?;
-            return Err(ErrorOrReturn::Return(val));
+            if val.is_error() {
+                return Err(ErrorOrReturn::Return(val));
+            }
+            val
         }
         ExprType::Paren(inner) => evaluate_expression(inner, env, decls)?,
     };

@@ -1,3 +1,7 @@
 _decl_ fn1 _fn_(foo_or_bar: (Foo | Bar)) -> i32 {
     _return_ 0;
 }
+
+_decl_ main _fn_ () -> i32 {
+    _return_ 0;
+ }

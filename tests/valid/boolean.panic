@@ -5,3 +5,7 @@ _decl_ boolean1 _fn_ (x: i32, y: i32) -> bool {
  _decl_ boolean2 _fn_ (x: i32, y: i32) -> bool {
     _return_ (x <= y) || (x < y) || (x == y) || (x != y) || (x >= y) || (x > y);
  }
+
+ _decl_ main _fn_ () -> i32 {
+   _return_ 0;
+}
