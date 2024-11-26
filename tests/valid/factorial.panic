@@ -7,3 +7,11 @@ _decl_ factorial _fn_ (n : i32) -> (i32 | ArithmeticOverflow | StackOverflow) {
         _return_ n * factorial((n - 1)?)?;
     }
 }
+
+_decl_ main _fn_ () -> i32 {
+    _debug(factorial(0));
+    _debug(factorial(1));
+    _debug(factorial(2));
+    _debug(factorial(3));
+    _return_ 0;
+}

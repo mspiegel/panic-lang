@@ -6,12 +6,15 @@ use std::process::ExitCode;
 //use pest_ascii_tree::print_ascii_tree;
 use clap::Subcommand;
 
+use environment::Environment;
+use evaluate::evaluate_function;
 use panic_lang::error::PanicErrorImpl;
 use panic_lang::error::PanicLangError;
 use panic_lang::parser::peg_grammar::PanicParser;
 use panic_lang::parser::peg_grammar::Rule;
 use panic_lang::parser::syntax_tree::program;
 use panic_lang::parser::syntax_tree::Decl;
+use panic_lang::parser::syntax_tree::FunctionDecl;
 use panic_lang::parser::syntax_tree::Program;
 
 pub(crate) mod environment;
@@ -42,8 +45,11 @@ fn command_print(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError
 
 fn command_run_main(
     _input: &str,
+    func: &FunctionDecl,
     declarations: &HashMap<String, Decl>,
 ) -> Result<ExitCode, PanicLangError> {
+    let mut environment = Environment::new(None);
+    evaluate_function(func, &mut environment, declarations)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -56,7 +62,7 @@ fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> 
     match declarations.get("main") {
         Some(Decl::Func(func)) => {
             if func.params.is_empty() {
-                command_run_main(_input, &declarations)
+                command_run_main(_input, func, &declarations)
             } else {
                 Err(PanicErrorImpl::EvaluationError(
                     "_decl_ main _fn_ () has unexpected parameters".into(),
