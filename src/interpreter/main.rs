@@ -1,14 +1,22 @@
+use std::collections::HashMap;
 use std::io;
 use std::io::BufRead;
+use std::process::ExitCode;
 
 //use pest_ascii_tree::print_ascii_tree;
 use clap::Subcommand;
 
+use panic_lang::error::PanicErrorImpl;
 use panic_lang::error::PanicLangError;
 use panic_lang::parser::peg_grammar::PanicParser;
 use panic_lang::parser::peg_grammar::Rule;
 use panic_lang::parser::syntax_tree::program;
+use panic_lang::parser::syntax_tree::Decl;
 use panic_lang::parser::syntax_tree::Program;
+
+pub(crate) mod environment;
+pub(crate) mod evaluate;
+pub(crate) mod value;
 
 #[derive(Debug, clap::Parser)]
 #[clap(name = "pani", version)]
@@ -27,11 +35,40 @@ enum Command {
     Run,
 }
 
-fn command_print(_input: &str, prog: Program) {
+fn command_print(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> {
     print!("{}", prog);
+    Ok(ExitCode::SUCCESS)
 }
 
-fn main() -> Result<(), PanicLangError> {
+fn command_run_main(
+    _input: &str,
+    declarations: &HashMap<String, Decl>,
+) -> Result<ExitCode, PanicLangError> {
+    Ok(ExitCode::SUCCESS)
+}
+
+fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> {
+    let declarations = prog
+        .decls
+        .into_iter()
+        .map(|decl| (decl.identifier().name.clone(), decl))
+        .collect::<HashMap<String, Decl>>();
+    match declarations.get("main") {
+        Some(Decl::Func(func)) => {
+            if func.params.is_empty() {
+                command_run_main(_input, &declarations)
+            } else {
+                Err(PanicErrorImpl::EvaluationError(
+                    "_decl_ main _fn_ () has unexpected parameters".into(),
+                )
+                .into())
+            }
+        }
+        None => Err(PanicErrorImpl::EvaluationError("_decl_ main _fn_ () not found".into()).into()),
+    }
+}
+
+fn main() -> Result<ExitCode, PanicLangError> {
     let cli = <Cli as clap::Parser>::parse();
 
     let stdin = io::stdin();
@@ -46,7 +83,6 @@ fn main() -> Result<(), PanicLangError> {
     match cli.command {
         Command::Print => command_print(&input, prog),
         Command::Reduce => todo!(),
-        Command::Run => todo!(),
+        Command::Run => command_run(&input, prog),
     }
-    Ok(())
 }

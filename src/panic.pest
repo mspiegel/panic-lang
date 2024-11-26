@@ -48,13 +48,14 @@ func_call     =   { ident ~ "(" ~ call_params? ~ ")" }
 call_params   =  _{ expr ~ ("," ~ expr)* ~ ","? }
 primary       =  _{ ident | literal | paren }
 paren         =   { "(" ~ expr ~ ")" }
-ident         =  _{ !bare_keyword ~ identifier }
+ident         =  _{ !bare_keyword ~ !keyword ~ identifier }
 literal       =  _{ int_literal | bool_literal }
 int_literal   =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
 bool_literal  =  @{ "true" | "false" }
 
 bare_keyword  =  @{ "true" | "false" }
-identifier    =  @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+keyword       =  @{ "_" ~ ASCII_ALPHANUMERIC+ ~ "_" }
+identifier    =  @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
 str_literal   =  @{ "\"" ~ str_inner ~ "\"" }
 str_inner     =  @{ (!("\"" | "\\") ~ ANY)* ~ (str_escape ~ str_inner)? }

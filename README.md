@@ -34,11 +34,10 @@ The interpreter can **parse** the following example:
 
 ```
 _decl_ factorial _fn_ (n : i32) -> (i32 | 
-        ExpectedNonNegative | 
         ArithmeticOverflow | 
         StackOverflow) {
     _if_ n < 0 {
-        _return_ ExpectedNonNegative;
+        _return_ n;
     } _else_ _if_ n == 0 {
         _return_ 1;
     } _else_ {

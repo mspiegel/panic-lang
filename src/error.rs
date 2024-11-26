@@ -10,6 +10,8 @@ pub enum PanicErrorImpl {
     ParserError(#[from] pest::error::Error<Rule>),
     #[error("syntax tree error")]
     SyntaxTreeError(String),
+    #[error("evaluation error")]
+    EvaluationError(String),
     #[error("unknown error")]
     Unknown,
 }

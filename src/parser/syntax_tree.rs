@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use num_bigint::BigInt;
 use pest::iterators::Pair;
@@ -10,6 +11,7 @@ use crate::error::PanicErrorImpl;
 use crate::error::PanicLangError;
 use crate::parser::peg_grammar::Rule;
 
+#[derive(Clone, Copy)]
 pub struct SpanPair {
     pub start: usize,
     pub end: usize,
@@ -62,6 +64,14 @@ pub struct Program {
 #[derive(Debug)]
 pub enum Decl {
     Func(FunctionDecl),
+}
+
+impl Decl {
+    pub fn identifier(&self) -> &Identifier {
+        match self {
+            Decl::Func(func) => &func.ident,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -132,7 +142,7 @@ pub struct Expr {
 
 #[derive(Debug)]
 pub enum ExprType {
-    IntLiteral(BigInt),
+    IntLiteral(Arc<BigInt>),
     BoolLiteral(bool),
     VarReference(Identifier),
     FuncCall(Identifier, Vec<Expr>),
@@ -339,11 +349,11 @@ fn paren(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
 }
 
 fn int_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
-    Ok(ExprType::IntLiteral(
+    Ok(ExprType::IntLiteral(Arc::new(
         BigInt::from_str(pair.as_span().as_str()).map_err(|e| {
             PanicErrorImpl::SyntaxTreeError(format!("invalid integer literal: {e}"))
         })?,
-    ))
+    )))
 }
 
 fn bool_literal(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
