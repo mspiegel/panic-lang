@@ -117,7 +117,9 @@ pub fn evaluate(expr: &Expr, env: &Environment) -> Result<Value, ErrorOrEarlyRet
             let rhs = evaluate(rhs_expr, env)?;
             match (lhs, rhs) {
                 (Value::Int32(lhs), Value::Int32(rhs)) => {
-                    if let Some(result) = lhs.checked_div(rhs) {
+                    if rhs == 0 {
+                        Value::ArithmeticDivisionByZero(expr.span)
+                    } else if let Some(result) = lhs.checked_div(rhs) {
                         Value::Int32(result)
                     } else {
                         Value::ArithmeticOverflow(expr.span)

@@ -12,6 +12,7 @@ pub enum Value {
     Int32(i32),
     Bool(bool),
     ArithmeticOverflow(SpanPair),
+    ArithmeticDivisionByZero(SpanPair),
     StackOverflow(SpanPair),
 }
 
@@ -23,6 +24,9 @@ impl fmt::Debug for Value {
             Self::Int32(val) => write!(f, "{}", val),
             Self::Bool(val) => write!(f, "{}", val),
             Self::ArithmeticOverflow(span) => write!(f, "ArithmeticOverflow at {:?}", span),
+            Self::ArithmeticDivisionByZero(span) => {
+                write!(f, "ArithmeticDivisionByZero at {:?}", span)
+            }
             Self::StackOverflow(span) => write!(f, "StackOverflow at {:?}", span),
         }
     }
