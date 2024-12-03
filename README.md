@@ -13,7 +13,7 @@ Design goals for the Panic language:
     - 'inline' is not a hint. inline functions never have a separate stack allocation 
 - errors are values
 - all values are zeroized when no longer unused
-  - every program should end with stack and heap full of 0s
+  - every program will end with stack and heap full of 0s
 - generic programming (generics) will not be supported with a separate syntax
 - macros (compile-time evaluation) will not be supported with a separate syntax
 - Panic will have an interpreter and a compiler
@@ -30,18 +30,37 @@ Panic has been inspired by [Rust](https://www.rust-lang.org/), [Zig](https://zig
 
 ## Current Status
 
-The interpreter can **parse** the following example:
+The interpreter can **parse** and **run** the following example:
 
 ```
-_decl_ factorial _fn_ (n : i32) -> (i32 | 
-        ArithmeticOverflow | 
-        StackOverflow) {
+_decl_ ExpectedNonNegative _primitive_ _type_ _is_ (Error & Provenance) { }
+
+_decl_ factorial _fn_ (n : i32) -> (i32 | ExpectedNonNegative | ArithmeticOverflow | StackOverflow) {
     _if_ n < 0 {
-        _return_ n;
+        _return_ ExpectedNonNegative;
     } _else_ _if_ n == 0 {
         _return_ 1;
     } _else_ {
         _return_ n * factorial((n - 1)?)?;
     }
+}
+
+_decl_ main _fn_ () -> i32 {
+    _debug(factorial(-1));
+    _debug(factorial(0));
+    _debug(factorial(1));
+    _debug(factorial(2));
+    _debug(factorial(3));
+    _debug(factorial(4));
+    _debug(factorial(5));
+    _debug(factorial(6));
+    _debug(factorial(7));
+    _debug(factorial(8));
+    _debug(factorial(9));
+    _debug(factorial(10));
+    _debug(factorial(11));
+    _debug(factorial(12));
+    _debug(factorial(13));
+    _return_ 0;
 }
 ```

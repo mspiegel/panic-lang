@@ -25,6 +25,7 @@ impl Display for Decl {
         let precision = formatter.precision().unwrap_or_default();
         match self {
             Decl::Func(func) => write!(formatter, "{:.*}", precision, func),
+            Decl::PrimitiveType(typ) => write!(formatter, "{:.*}", precision, typ),
         }
     }
 }
@@ -41,6 +42,21 @@ fn fmt_slice<T: Display>(
         }
     }
     Ok(())
+}
+
+impl Display for PrimitiveTypeDecl {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let precision = formatter.precision().unwrap_or_default();
+        indent(formatter, precision)?;
+        write!(formatter, "_decl_ {} ", self.ident)?;
+        write!(formatter, "_primitive_ ")?;
+        write!(formatter, "_type_ ")?;
+        if let Some(relations) = &self.relations {
+            write!(formatter, "_is_ {} ", relations)?;
+        }
+        write!(formatter, "{{ }}\n\n")?;
+        Ok(())
+    }
 }
 
 impl Display for FunctionDecl {
@@ -139,6 +155,19 @@ impl Display for TypeExpr {
     }
 }
 
+impl Display for DeclExpr {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.decl {
+            DeclExprEnum::Ref(reference) => write!(formatter, "{}", reference),
+            DeclExprEnum::Intersection(decls) => {
+                write!(formatter, "( ")?;
+                fmt_slice(decls, " & ", formatter)?;
+                write!(formatter, " )")
+            }
+        }
+    }
+}
+
 impl Display for Expr {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.expr {
@@ -180,6 +209,14 @@ impl Display for TypeRef {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             TypeRef::TypeName(identifier) => write!(formatter, "{}", identifier),
+        }
+    }
+}
+
+impl Display for DeclRef {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeclRef::TypeName(identifier) => write!(formatter, "{}", identifier),
         }
     }
 }

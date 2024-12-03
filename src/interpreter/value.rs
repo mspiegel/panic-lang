@@ -14,6 +14,14 @@ pub enum Value {
     ArithmeticOverflow(SpanPair),
     ArithmeticDivisionByZero(SpanPair),
     StackOverflow(SpanPair),
+    UserPrimitive(PrimitiveValue),
+}
+
+#[derive(Clone)]
+pub struct PrimitiveValue {
+    pub identifier: String,
+    pub error: bool,
+    pub provenance: Option<SpanPair>,
 }
 
 impl Value {
@@ -22,6 +30,7 @@ impl Value {
             Value::ArithmeticOverflow(_) => true,
             Value::ArithmeticDivisionByZero(_) => true,
             Value::StackOverflow(_) => true,
+            Value::UserPrimitive(val) => val.error,
             _ => false,
         }
     }
@@ -39,6 +48,10 @@ impl fmt::Debug for Value {
                 write!(f, "ArithmeticDivisionByZero at {:?}", span)
             }
             Self::StackOverflow(span) => write!(f, "StackOverflow at {:?}", span),
+            Self::UserPrimitive(val) => match &val.provenance {
+                Some(span) => write!(f, "{} at {:?}", val.identifier, span),
+                None => write!(f, "{}", val.identifier),
+            },
         }
     }
 }

@@ -70,6 +70,9 @@ fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> 
                 .into())
             }
         }
+        Some(_) => {
+            Err(PanicErrorImpl::EvaluationError("main is not a _fn_ declaration".into()).into())
+        }
         None => Err(PanicErrorImpl::EvaluationError("_decl_ main _fn_ () not found".into()).into()),
     }
 }

@@ -1,7 +1,15 @@
 WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 
 program       =   { SOI ~ decl* ~ EOI }
-decl          =   { fn_decl }
+decl          =   { type_decl | fn_decl }
+
+type_decl     =   { prim_decl } // | val_decl | res_decl | ref_decl
+prim_decl     =   { "_decl_" ~ ident ~ "_primitive_" ~ "_type_" ~ decl_relation? ~ "{" ~ "}" }
+decl_relation =   { "_is_" ~ decl_expr }
+decl_expr     =   { decl_isect | decl_ref }
+decl_isect    =   { "(" ~ decl_ref ~ ( "&" ~ decl_ref )+ ~ ")" }
+decl_ref      =   { ident }
+
 fn_decl       =   { "_decl_" ~ ident ~ "_fn_" ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_expr ~ stmt_block }
 type_expr     =   { type_union | type_ref }
 type_union    =   { "(" ~ type_ref ~ ( "|" ~ type_ref )+ ~ ")" }

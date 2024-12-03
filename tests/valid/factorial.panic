@@ -1,6 +1,8 @@
-_decl_ factorial _fn_ (n : i32) -> (i32 | ArithmeticOverflow | StackOverflow) {
+_decl_ ExpectedNonNegative _primitive_ _type_ _is_ (Error & Provenance) { }
+
+_decl_ factorial _fn_ (n : i32) -> (i32 | ExpectedNonNegative | ArithmeticOverflow | StackOverflow) {
     _if_ n < 0 {
-        _return_ n;
+        _return_ ExpectedNonNegative;
     } _else_ _if_ n == 0 {
         _return_ 1;
     } _else_ {
@@ -9,6 +11,7 @@ _decl_ factorial _fn_ (n : i32) -> (i32 | ArithmeticOverflow | StackOverflow) {
 }
 
 _decl_ main _fn_ () -> i32 {
+    _debug(factorial(-1));
     _debug(factorial(0));
     _debug(factorial(1));
     _debug(factorial(2));

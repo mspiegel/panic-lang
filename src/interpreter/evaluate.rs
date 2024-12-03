@@ -5,6 +5,7 @@ use num_traits::cast::ToPrimitive;
 use panic_lang::error::PanicErrorImpl;
 use panic_lang::error::PanicLangError;
 use panic_lang::parser::syntax_tree::Decl;
+use panic_lang::parser::syntax_tree::DeclExprEnum;
 use panic_lang::parser::syntax_tree::Else;
 use panic_lang::parser::syntax_tree::Expr;
 use panic_lang::parser::syntax_tree::ExprType;
@@ -14,6 +15,7 @@ use panic_lang::parser::syntax_tree::IfStmt;
 use panic_lang::parser::syntax_tree::Stmt;
 
 use crate::environment::Environment;
+use crate::value::PrimitiveValue;
 use crate::value::Value;
 
 pub enum ErrorOrReturn {
@@ -144,17 +146,44 @@ pub fn evaluate_expression(
             None => Value::ArithmeticOverflow(expr.span),
         },
         ExprType::BoolLiteral(val) => Value::Bool(*val),
-        ExprType::VarReference(var_ref) => env
-            .get(&var_ref.name, var_ref.span)
-            .map_err(ErrorOrReturn::Error)?,
+        ExprType::VarReference(var_ref) => {
+            if let Some(Decl::PrimitiveType(prim)) = decls.get(&var_ref.name) {
+                let relations =
+                    prim.relations
+                        .as_ref()
+                        .map_or(vec![], |decl_expr| match &decl_expr.decl {
+                            DeclExprEnum::Ref(decl_ref) => {
+                                vec![decl_ref.identifier().name.clone()]
+                            }
+                            DeclExprEnum::Intersection(decl_refs) => decl_refs
+                                .iter()
+                                .map(|decl_ref| decl_ref.identifier().name.clone())
+                                .collect(),
+                        });
+                let error = relations.contains(&"Error".to_string());
+                let provenance = if relations.contains(&"Provenance".to_string()) {
+                    Some(expr.span.clone())
+                } else {
+                    None
+                };
+                Value::UserPrimitive(PrimitiveValue {
+                    identifier: var_ref.name.clone(),
+                    error,
+                    provenance,
+                })
+            } else {
+                env.get(&var_ref.name, var_ref.span)
+                    .map_err(ErrorOrReturn::Error)?
+            }
+        }
         ExprType::FuncCall(iden, params) => {
             if iden.name == "_debug" {
                 return evaluate_debug_expression(iden, params, env, decls);
             }
-            let func = decls.get(&iden.name);
-            let func = match func {
-                Some(decl) => decl,
-                None => {
+            let decl = decls.get(&iden.name);
+            let func = match decl {
+                Some(Decl::Func(func)) => func,
+                _ => {
                     return Err(PanicErrorImpl::EvaluationError(format!(
                         "cannot find function {} at {:?}",
                         iden.name, iden.span
@@ -162,7 +191,6 @@ pub fn evaluate_expression(
                     .into())
                 }
             };
-            let Decl::Func(func) = func;
             if func.params.len() != params.len() {
                 return Err(PanicErrorImpl::EvaluationError(format!(
                     "expected {} parameters and received {} parameters at {:?}",

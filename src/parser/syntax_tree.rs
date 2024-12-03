@@ -45,8 +45,33 @@ pub enum TypeExprEnum {
 }
 
 #[derive(Debug)]
+pub struct DeclExpr {
+    pub decl: DeclExprEnum,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub enum DeclExprEnum {
+    Ref(DeclRef),
+    Intersection(Vec<DeclRef>),
+}
+
+#[derive(Debug)]
 pub enum TypeRef {
     TypeName(Identifier),
+}
+
+#[derive(Debug)]
+pub enum DeclRef {
+    TypeName(Identifier),
+}
+
+impl DeclRef {
+    pub fn identifier(&self) -> &Identifier {
+        match self {
+            DeclRef::TypeName(ident) => ident,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -64,12 +89,14 @@ pub struct Program {
 #[derive(Debug)]
 pub enum Decl {
     Func(FunctionDecl),
+    PrimitiveType(PrimitiveTypeDecl),
 }
 
 impl Decl {
     pub fn identifier(&self) -> &Identifier {
         match self {
             Decl::Func(func) => &func.ident,
+            Decl::PrimitiveType(typ) => &typ.ident,
         }
     }
 }
@@ -80,6 +107,13 @@ pub struct FunctionDecl {
     pub params: Vec<FuncParamDecl>,
     pub return_type: TypeExpr,
     pub stmts: Vec<Stmt>,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct PrimitiveTypeDecl {
+    pub ident: Identifier,
+    pub relations: Option<DeclExpr>,
     pub span: SpanPair,
 }
 
@@ -181,9 +215,41 @@ pub fn program(pair: Pair<Rule>) -> Result<Program, PanicLangError> {
 }
 
 fn decl(pair: Pair<Rule>) -> Result<Decl, PanicLangError> {
-    Ok(Decl::Func(function_decl(
-        pair.into_inner().next().unwrap(),
-    )?))
+    let child = pair.into_inner().next().unwrap();
+    match child.as_rule() {
+        Rule::fn_decl => Ok(Decl::Func(function_decl(child)?)),
+        Rule::type_decl => type_decl(child),
+        r => {
+            return PanicErrorImpl::SyntaxTreeError(format!("unexpected declaration {:?}", r))
+                .into();
+        }
+    }
+}
+
+fn type_decl(pair: Pair<Rule>) -> Result<Decl, PanicLangError> {
+    let child = pair.into_inner().next().unwrap();
+    match child.as_rule() {
+        Rule::prim_decl => Ok(Decl::PrimitiveType(primitive_type_decl(child)?)),
+        r => {
+            return PanicErrorImpl::SyntaxTreeError(format!("unexpected type declaration {:?}", r))
+                .into();
+        }
+    }
+}
+
+fn primitive_type_decl(pair: Pair<Rule>) -> Result<PrimitiveTypeDecl, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let ident = identifier(children.next().unwrap())?;
+    let relations = match children.next() {
+        Some(pair) => Some(decl_expression(pair.into_inner().next().unwrap())?),
+        None => None,
+    };
+    Ok(PrimitiveTypeDecl {
+        ident,
+        relations,
+        span,
+    })
 }
 
 fn function_decl(pair: Pair<Rule>) -> Result<FunctionDecl, PanicLangError> {
@@ -248,6 +314,31 @@ fn type_union(pair: Pair<Rule>) -> Result<Vec<TypeRef>, PanicLangError> {
 
 fn type_reference(pair: Pair<Rule>) -> Result<TypeRef, PanicLangError> {
     Ok(TypeRef::TypeName(identifier(
+        pair.into_inner().next().unwrap(),
+    )?))
+}
+
+fn decl_expression(pair: Pair<Rule>) -> Result<DeclExpr, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let child = children.next().unwrap();
+    let decl = match child.as_rule() {
+        Rule::decl_isect => Ok(DeclExprEnum::Intersection(decl_intersection(child)?)),
+        Rule::decl_ref => Ok(DeclExprEnum::Ref(decl_reference(child)?)),
+        r => PanicErrorImpl::SyntaxTreeError(format!("unexpected decl expression rule {:?}", r))
+            .into(),
+    }?;
+    Ok(DeclExpr { decl, span })
+}
+
+fn decl_intersection(pair: Pair<Rule>) -> Result<Vec<DeclRef>, PanicLangError> {
+    pair.into_inner()
+        .map(decl_reference)
+        .collect::<Result<Vec<_>, _>>()
+}
+
+fn decl_reference(pair: Pair<Rule>) -> Result<DeclRef, PanicLangError> {
+    Ok(DeclRef::TypeName(identifier(
         pair.into_inner().next().unwrap(),
     )?))
 }
