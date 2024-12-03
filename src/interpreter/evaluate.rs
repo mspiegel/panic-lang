@@ -162,7 +162,7 @@ pub fn evaluate_expression(
                         });
                 let error = relations.contains(&"Error".to_string());
                 let provenance = if relations.contains(&"Provenance".to_string()) {
-                    Some(expr.span.clone())
+                    Some(expr.span)
                 } else {
                     None
                 };

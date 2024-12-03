@@ -78,10 +78,10 @@ fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> 
 }
 
 pub fn run_string(input: &str) -> Result<ExitCode, PanicLangError> {
-    let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input)?;
+    let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, input)?;
     let top_node = pairs.next().unwrap();
     let prog = program(top_node)?;
-    command_run(&input, prog)
+    command_run(input, prog)
 }
 
 fn main() -> Result<ExitCode, PanicLangError> {

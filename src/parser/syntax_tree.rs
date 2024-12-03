@@ -220,8 +220,8 @@ fn decl(pair: Pair<Rule>) -> Result<Decl, PanicLangError> {
         Rule::fn_decl => Ok(Decl::Func(function_decl(child)?)),
         Rule::type_decl => type_decl(child),
         r => {
-            return PanicErrorImpl::SyntaxTreeError(format!("unexpected declaration {:?}", r))
-                .into();
+            PanicErrorImpl::SyntaxTreeError(format!("unexpected declaration {:?}", r))
+                .into()
         }
     }
 }
@@ -231,8 +231,8 @@ fn type_decl(pair: Pair<Rule>) -> Result<Decl, PanicLangError> {
     match child.as_rule() {
         Rule::prim_decl => Ok(Decl::PrimitiveType(primitive_type_decl(child)?)),
         r => {
-            return PanicErrorImpl::SyntaxTreeError(format!("unexpected type declaration {:?}", r))
-                .into();
+            PanicErrorImpl::SyntaxTreeError(format!("unexpected type declaration {:?}", r))
+                .into()
         }
     }
 }
