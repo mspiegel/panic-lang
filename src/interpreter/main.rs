@@ -2,10 +2,12 @@ use std::collections::HashMap;
 use std::io;
 use std::io::BufRead;
 use std::process::ExitCode;
+use std::sync::Arc;
 
 //use pest_ascii_tree::print_ascii_tree;
 use clap::Subcommand;
 
+use declaration::Declarations;
 use environment::Environment;
 use evaluate::evaluate_function;
 use panic_lang::error::PanicErrorImpl;
@@ -17,6 +19,7 @@ use panic_lang::parser::syntax_tree::Decl;
 use panic_lang::parser::syntax_tree::FunctionDecl;
 use panic_lang::parser::syntax_tree::Program;
 
+pub(crate) mod declaration;
 pub(crate) mod environment;
 pub(crate) mod evaluate;
 pub(crate) mod value;
@@ -46,7 +49,7 @@ fn command_print(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError
 fn command_run_main(
     _input: &str,
     func: &FunctionDecl,
-    declarations: &HashMap<String, Decl>,
+    declarations: &Declarations,
 ) -> Result<ExitCode, PanicLangError> {
     let mut environment = Environment::new(None);
     evaluate_function(func, &mut environment, declarations)?;
@@ -54,12 +57,13 @@ fn command_run_main(
 }
 
 fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> {
-    let declarations = prog
+    let syntax_tree = prog
         .decls
         .into_iter()
         .map(|decl| (decl.identifier().name.clone(), decl))
-        .collect::<HashMap<String, Decl>>();
-    match declarations.get("main") {
+        .collect::<HashMap<Arc<String>, Decl>>();
+    let declarations = Declarations::new(syntax_tree);
+    match declarations.syntax_tree.get(&Arc::new("main".into())) {
         Some(Decl::Func(func)) => {
             if func.params.is_empty() {
                 command_run_main(_input, func, &declarations)

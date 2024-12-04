@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
 use num_traits::cast::ToPrimitive;
 
 use panic_lang::error::PanicErrorImpl;
 use panic_lang::error::PanicLangError;
 use panic_lang::parser::syntax_tree::Decl;
-use panic_lang::parser::syntax_tree::DeclExprEnum;
 use panic_lang::parser::syntax_tree::Else;
 use panic_lang::parser::syntax_tree::Expr;
 use panic_lang::parser::syntax_tree::ExprType;
@@ -14,8 +11,10 @@ use panic_lang::parser::syntax_tree::Identifier;
 use panic_lang::parser::syntax_tree::IfStmt;
 use panic_lang::parser::syntax_tree::Stmt;
 
+use crate::declaration::Declarations;
 use crate::environment::Environment;
-use crate::value::PrimitiveValue;
+use crate::value::arithmetic_division_by_zero;
+use crate::value::arithmetic_overflow;
 use crate::value::Value;
 
 pub enum ErrorOrReturn {
@@ -32,7 +31,7 @@ impl From<PanicErrorImpl> for ErrorOrReturn {
 pub fn evaluate_function(
     func: &FunctionDecl,
     env: &mut Environment,
-    decls: &HashMap<String, Decl>,
+    decls: &Declarations,
 ) -> Result<Value, PanicLangError> {
     let result = evaluate_statements(&func.stmts, env, decls);
     if let Err(error_or_return) = result {
@@ -51,7 +50,7 @@ pub fn evaluate_function(
 pub fn evaluate_statements(
     stmts: &[Stmt],
     env: &mut Environment,
-    decls: &HashMap<String, Decl>,
+    decls: &Declarations,
 ) -> Result<(), ErrorOrReturn> {
     for stmt in stmts {
         evaluate_statement(stmt, env, decls)?;
@@ -62,7 +61,7 @@ pub fn evaluate_statements(
 pub fn evaluate_statement(
     stmt: &Stmt,
     env: &mut Environment,
-    decls: &HashMap<String, Decl>,
+    decls: &Declarations,
 ) -> Result<(), ErrorOrReturn> {
     match stmt {
         Stmt::Empty(_) => {}
@@ -87,7 +86,7 @@ pub fn evaluate_statement(
 pub fn evaluate_if_statement(
     if_stmt: &IfStmt,
     env: &mut Environment,
-    decls: &HashMap<String, Decl>,
+    decls: &Declarations,
 ) -> Result<(), ErrorOrReturn> {
     let conditional = evaluate_expression(&if_stmt.test, env, decls)?;
     if let Value::Bool(condition) = conditional {
@@ -120,7 +119,7 @@ fn evaluate_debug_expression(
     iden: &Identifier,
     params: &[Expr],
     env: &Environment,
-    decls: &HashMap<String, Decl>,
+    decls: &Declarations,
 ) -> Result<Value, ErrorOrReturn> {
     if params.len() != 1 {
         return Err(PanicErrorImpl::EvaluationError(format!(
@@ -138,49 +137,27 @@ fn evaluate_debug_expression(
 pub fn evaluate_expression(
     expr: &Expr,
     env: &Environment,
-    decls: &HashMap<String, Decl>,
+    decls: &Declarations,
 ) -> Result<Value, ErrorOrReturn> {
     let value = match &expr.expr {
         ExprType::IntLiteral(bigval) => match bigval.to_i32() {
             Some(val) => Value::Int32(val),
-            None => Value::ArithmeticOverflow(expr.span),
+            None => arithmetic_overflow(expr.span),
         },
         ExprType::BoolLiteral(val) => Value::Bool(*val),
         ExprType::VarReference(var_ref) => {
-            if let Some(Decl::PrimitiveType(prim)) = decls.get(&var_ref.name) {
-                let relations =
-                    prim.relations
-                        .as_ref()
-                        .map_or(vec![], |decl_expr| match &decl_expr.decl {
-                            DeclExprEnum::Ref(decl_ref) => {
-                                vec![decl_ref.identifier().name.clone()]
-                            }
-                            DeclExprEnum::Intersection(decl_refs) => decl_refs
-                                .iter()
-                                .map(|decl_ref| decl_ref.identifier().name.clone())
-                                .collect(),
-                        });
-                let error = relations.contains(&"Error".to_string());
-                let provenance = if relations.contains(&"Provenance".to_string()) {
-                    Some(expr.span)
-                } else {
-                    None
-                };
-                Value::UserPrimitive(PrimitiveValue {
-                    identifier: var_ref.name.clone(),
-                    error,
-                    provenance,
-                })
+            if let Some(primitive) = decls.primitives.get(&var_ref.name) {
+                primitive.value(var_ref.span)
             } else {
                 env.get(&var_ref.name, var_ref.span)
                     .map_err(ErrorOrReturn::Error)?
             }
         }
         ExprType::FuncCall(iden, params) => {
-            if iden.name == "_debug" {
+            if *iden.name == "_debug" {
                 return evaluate_debug_expression(iden, params, env, decls);
             }
-            let decl = decls.get(&iden.name);
+            let decl = decls.syntax_tree.get(&iden.name);
             let func = match decl {
                 Some(Decl::Func(func)) => func,
                 _ => {
@@ -223,7 +200,7 @@ pub fn evaluate_expression(
                     if let Some(result) = sum.checked_add(*val) {
                         sum = result;
                     } else {
-                        return Ok(Value::ArithmeticOverflow(expr.span));
+                        return Ok(arithmetic_overflow(expr.span));
                     }
                 } else {
                     return Err(PanicErrorImpl::EvaluationError(format!(
@@ -243,7 +220,7 @@ pub fn evaluate_expression(
                     if let Some(result) = lhs.checked_sub(rhs) {
                         Value::Int32(result)
                     } else {
-                        Value::ArithmeticOverflow(expr.span)
+                        arithmetic_overflow(expr.span)
                     }
                 }
                 (Value::Int32(_), rhs) => {
@@ -281,7 +258,7 @@ pub fn evaluate_expression(
                     if let Some(result) = product.checked_mul(*val) {
                         product = result;
                     } else {
-                        return Ok(Value::ArithmeticOverflow(expr.span));
+                        return Ok(arithmetic_overflow(expr.span));
                     }
                 } else {
                     return Err(PanicErrorImpl::EvaluationError(format!(
@@ -299,11 +276,11 @@ pub fn evaluate_expression(
             match (lhs, rhs) {
                 (Value::Int32(lhs), Value::Int32(rhs)) => {
                     if rhs == 0 {
-                        Value::ArithmeticDivisionByZero(expr.span)
+                        arithmetic_division_by_zero(expr.span)
                     } else if let Some(result) = lhs.checked_div(rhs) {
                         Value::Int32(result)
                     } else {
-                        Value::ArithmeticOverflow(expr.span)
+                        arithmetic_overflow(expr.span)
                     }
                 }
                 (Value::Int32(_), rhs) => {
@@ -544,7 +521,7 @@ pub fn evaluate_expression(
                     if let Some(result) = val.checked_neg() {
                         Value::Int32(result)
                     } else {
-                        Value::ArithmeticOverflow(expr.span)
+                        arithmetic_overflow(expr.span)
                     }
                 }
                 val => {

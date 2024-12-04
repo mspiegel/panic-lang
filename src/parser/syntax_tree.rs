@@ -56,12 +56,21 @@ pub enum DeclExprEnum {
     Intersection(Vec<DeclRef>),
 }
 
-#[derive(Debug)]
+impl DeclExprEnum {
+    pub fn to_vec(&self) -> Vec<DeclRef> {
+        match self {
+            DeclExprEnum::Ref(decl_ref) => vec![decl_ref.clone()],
+            DeclExprEnum::Intersection(vec) => vec.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum TypeRef {
     TypeName(Identifier),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum DeclRef {
     TypeName(Identifier),
 }
@@ -74,9 +83,9 @@ impl DeclRef {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Identifier {
-    pub name: String,
+    pub name: Arc<String>,
     pub span: SpanPair,
 }
 
@@ -535,7 +544,7 @@ fn function_call(pair: Pair<Rule>) -> Result<ExprType, PanicLangError> {
 
 fn identifier(pair: Pair<Rule>) -> Result<Identifier, PanicLangError> {
     let span = pair.as_span().into();
-    let name = String::from(pair.as_span().as_str());
+    let name = Arc::new(String::from(pair.as_span().as_str()));
     Ok(Identifier { name, span })
 }
 

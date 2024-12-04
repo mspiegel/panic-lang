@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use panic_lang::error::PanicErrorImpl;
 use panic_lang::error::PanicLangError;
@@ -7,7 +8,7 @@ use panic_lang::parser::syntax_tree::SpanPair;
 use crate::value::Value;
 
 pub struct Environment<'a> {
-    values: HashMap<String, Value>,
+    values: HashMap<Arc<String>, Value>,
     parent: Option<&'a Environment<'a>>,
 }
 
@@ -18,7 +19,7 @@ impl<'a> Environment<'a> {
             parent,
         }
     }
-    pub fn get(&self, key: &str, span: SpanPair) -> Result<Value, PanicLangError> {
+    pub fn get(&self, key: &Arc<String>, span: SpanPair) -> Result<Value, PanicLangError> {
         if let Some(val) = self.values.get(key) {
             Ok(val.clone())
         } else if let Some(parent) = self.parent.as_ref() {
@@ -32,7 +33,7 @@ impl<'a> Environment<'a> {
         }
     }
 
-    pub fn set(&mut self, key: String, val: Value) {
-        self.values.insert(key, val);
+    pub fn set(&mut self, key: Arc<String>, val: Value) {
+        self.values.insert(key.clone(), val);
     }
 }
