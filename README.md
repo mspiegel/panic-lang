@@ -35,7 +35,9 @@ The interpreter can **parse** and **run** the following example:
 ```
 _decl_ ExpectedNonNegative _primitive_ _type_ _is_ (Error & Provenance) { }
 
-_decl_ factorial _fn_ (n : i32) -> (i32 | ExpectedNonNegative | ArithmeticOverflow | StackOverflow) {
+_decl_ factorial _fn_ (n : i32) -> (i32 |
+    ExpectedNonNegative | ArithmeticOverflow | 
+    StackOverflow) {
     _if_ n < 0 {
         _return_ ExpectedNonNegative;
     } _else_ _if_ n == 0 {
