@@ -26,7 +26,7 @@ pub struct PrimitiveValue {
 
 pub fn arithmetic_overflow(provenance: SpanPair) -> Value {
     Value::UserPrimitive(PrimitiveValue {
-        identifier: (&*ARITHMETIC_OVERFLOW).clone(),
+        identifier: (*ARITHMETIC_OVERFLOW).clone(),
         error: true,
         provenance: Some(provenance),
     })
@@ -34,7 +34,7 @@ pub fn arithmetic_overflow(provenance: SpanPair) -> Value {
 
 pub fn arithmetic_division_by_zero(provenance: SpanPair) -> Value {
     Value::UserPrimitive(PrimitiveValue {
-        identifier: (&*ARITHMETIC_DIVISION_BY_ZERO).clone(),
+        identifier: (*ARITHMETIC_DIVISION_BY_ZERO).clone(),
         error: true,
         provenance: Some(provenance),
     })
