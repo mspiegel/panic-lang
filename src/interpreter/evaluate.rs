@@ -365,58 +365,12 @@ pub fn evaluate_expression(
         ExprType::Eq(lhs_expr, rhs_expr) => {
             let lhs = evaluate_expression(lhs_expr, env, decls)?;
             let rhs = evaluate_expression(rhs_expr, env, decls)?;
-            match (lhs, rhs) {
-                (Value::Int32(lhs), Value::Int32(rhs)) => Value::Bool(lhs == rhs),
-                (Value::Int32(_), rhs) => {
-                    return Err(PanicErrorImpl::EvaluationError(format!(
-                        "cannot == compare {:?} at {:?}",
-                        rhs, rhs_expr.span,
-                    ))
-                    .into());
-                }
-                (lhs, Value::Int32(_)) => {
-                    return Err(PanicErrorImpl::EvaluationError(format!(
-                        "cannot == compare {:?} at {:?}",
-                        lhs, lhs_expr.span,
-                    ))
-                    .into());
-                }
-                (lhs, rhs) => {
-                    return Err(PanicErrorImpl::EvaluationError(format!(
-                        "cannot == compare {:?} at {:?} and {:?} at {:?}",
-                        lhs, lhs_expr.span, rhs, rhs_expr.span,
-                    ))
-                    .into());
-                }
-            }
+            Value::Bool(lhs == rhs)
         }
         ExprType::NotEq(lhs_expr, rhs_expr) => {
             let lhs = evaluate_expression(lhs_expr, env, decls)?;
             let rhs = evaluate_expression(rhs_expr, env, decls)?;
-            match (lhs, rhs) {
-                (Value::Int32(lhs), Value::Int32(rhs)) => Value::Bool(lhs != rhs),
-                (Value::Int32(_), rhs) => {
-                    return Err(PanicErrorImpl::EvaluationError(format!(
-                        "cannot != compare {:?} at {:?}",
-                        rhs, rhs_expr.span,
-                    ))
-                    .into());
-                }
-                (lhs, Value::Int32(_)) => {
-                    return Err(PanicErrorImpl::EvaluationError(format!(
-                        "cannot != compare {:?} at {:?}",
-                        lhs, lhs_expr.span,
-                    ))
-                    .into());
-                }
-                (lhs, rhs) => {
-                    return Err(PanicErrorImpl::EvaluationError(format!(
-                        "cannot != compare {:?} at {:?} and {:?} at {:?}",
-                        lhs, lhs_expr.span, rhs, rhs_expr.span,
-                    ))
-                    .into());
-                }
-            }
+            Value::Bool(lhs != rhs)
         }
         ExprType::GtEq(lhs_expr, rhs_expr) => {
             let lhs = evaluate_expression(lhs_expr, env, decls)?;

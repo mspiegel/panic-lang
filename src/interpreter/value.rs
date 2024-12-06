@@ -1,8 +1,6 @@
 use std::fmt;
 use std::sync::Arc;
 
-use num_bigint::BigInt;
-
 use panic_lang::parser::syntax_tree::SpanPair;
 
 use crate::declaration::ARITHMETIC_DIVISION_BY_ZERO;
@@ -10,8 +8,6 @@ use crate::declaration::ARITHMETIC_OVERFLOW;
 
 #[derive(Clone)]
 pub enum Value {
-    IntLiteral(Arc<BigInt>),
-    BoolLiteral(bool),
     Int32(i32),
     Bool(bool),
     UserPrimitive(PrimitiveValue),
@@ -49,11 +45,22 @@ impl Value {
     }
 }
 
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Int32(i), Value::Int32(j)) => i == j,
+            (Value::Bool(i), Value::Bool(j)) => i == j,
+            (Value::UserPrimitive(i), Value::UserPrimitive(j)) => i.identifier == j.identifier,
+            (_, _) => unreachable!(),
+        }
+    }
+}
+
+impl Eq for Value {}
+
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::IntLiteral(val) => write!(f, "{}", val),
-            Self::BoolLiteral(val) => write!(f, "{}", val),
             Self::Int32(val) => write!(f, "{}", val),
             Self::Bool(val) => write!(f, "{}", val),
             Self::UserPrimitive(val) => match &val.provenance {
