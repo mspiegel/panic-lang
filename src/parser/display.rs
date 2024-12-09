@@ -87,14 +87,14 @@ impl Display for ValueTypeDecl {
         if let Some(relations) = &self.relations {
             write!(formatter, "_is_ {} ", relations)?;
         }
-        write!(formatter, "{{\n")?;
+        writeln!(formatter, "{{")?;
         for field in self.fields.iter() {
             write!(formatter, "{:.*}", precision + 1, field)?;
         }
         for method in self.methods.iter() {
             write!(formatter, "{:.*}", precision + 1, method)?;
         }
-        write!(formatter, "}}\n")?;
+        writeln!(formatter, "}}")?;
         Ok(())
     }
 }
@@ -118,7 +118,7 @@ impl Display for FieldDecl {
         let precision = formatter.precision().unwrap_or_default();
         indent(formatter, precision)?;
         write!(formatter, "{} : {}", self.ident, self.type_expr)?;
-        write!(formatter, ",\n")?;
+        writeln!(formatter, ",")?;
         Ok(())
     }
 }
