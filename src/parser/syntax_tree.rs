@@ -99,6 +99,8 @@ pub struct Program {
 pub enum Decl {
     Func(FunctionDecl),
     PrimitiveType(PrimitiveTypeDecl),
+    UnionType(UnionTypeDecl),
+    ValueType(ValueTypeDecl),
 }
 
 impl Decl {
@@ -106,6 +108,8 @@ impl Decl {
         match self {
             Decl::Func(func) => &func.ident,
             Decl::PrimitiveType(typ) => &typ.ident,
+            Decl::UnionType(typ) => &typ.ident,
+            Decl::ValueType(typ) => &typ.ident,
         }
     }
 }
@@ -113,9 +117,22 @@ impl Decl {
 #[derive(Debug)]
 pub struct FunctionDecl {
     pub ident: Identifier,
+    pub signature: FunctionSig,
+    pub stmts: Vec<Stmt>,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct FunctionSig {
     pub params: Vec<FuncParamDecl>,
     pub return_type: TypeExpr,
-    pub stmts: Vec<Stmt>,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct FuncParamDecl {
+    pub ident: Identifier,
+    pub type_expr: TypeExpr,
     pub span: SpanPair,
 }
 
@@ -127,10 +144,39 @@ pub struct PrimitiveTypeDecl {
 }
 
 #[derive(Debug)]
-pub struct FuncParamDecl {
+pub struct UnionTypeDecl {
+    pub ident: Identifier,
+    pub union: TypeExpr,
+    pub relations: Option<DeclExpr>,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct ValueTypeDecl {
+    pub ident: Identifier,
+    pub relations: Option<DeclExpr>,
+    pub fields: Vec<FieldDecl>,
+    pub methods: Vec<MethodDecl>,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct FieldDecl {
     pub ident: Identifier,
     pub type_expr: TypeExpr,
     pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct MethodDecl {
+    pub ident: Identifier,
+    pub signature: FunctionSig,
+    pub stmts: Vec<Stmt>,
+    pub span: SpanPair,
+}
+
+pub struct TypeMethod {
+    pub ident: Identifier,
 }
 
 #[derive(Debug)]
@@ -259,6 +305,19 @@ fn function_decl(pair: Pair<Rule>) -> Result<FunctionDecl, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
+    let signature = function_sig(children.next().unwrap())?;
+    let stmts = statement_block(children.next().unwrap())?;
+    Ok(FunctionDecl {
+        ident,
+        signature,
+        stmts,
+        span,
+    })
+}
+
+fn function_sig(pair: Pair<Rule>) -> Result<FunctionSig, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
     let mut next = children.next().unwrap();
     let params = if next.as_rule() == Rule::func_params {
         let params = next;
@@ -268,12 +327,9 @@ fn function_decl(pair: Pair<Rule>) -> Result<FunctionDecl, PanicLangError> {
         vec![]
     };
     let return_type = type_expression(next)?;
-    let stmts = statement_block(children.next().unwrap())?;
-    Ok(FunctionDecl {
-        ident,
+    Ok(FunctionSig {
         params,
         return_type,
-        stmts,
         span,
     })
 }

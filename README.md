@@ -66,3 +66,120 @@ _decl_ main _fn_ () -> i32 {
     _return_ 0;
 }
 ```
+
+Generates the following output:
+
+```
+ExpectedNonNegative at (213, 232)
+1
+1
+2
+6
+24
+120
+720
+5040
+40320
+362880
+3628800
+39916800
+479001600
+ArithmeticOverflow at (313, 337)
+```
+
+## Data Types
+
+### Primitive Types
+
+| Name         | Description                   |
+|--------------|-------------------------------|
+|bool          | boolean                       |
+|i32           | 32-bit signed integer         |
+
+#### Arithmetic Operators
+
+| Operation   | Input Type | Output Type      |
+|-------------|------------|------------------|
+| add         | iN | (iN \| ArithmeticOverflow) |
+| subtract    | iN | (iN \| ArithmeticOverflow) |
+| multiply    | iN | (iN \| ArithmeticOverflow) |
+| divide      | iN | (iN \| ArithmeticOverflow \| ArithmeticDivisionByZero) |
+| negate      | iN | (iN \| ArithmeticOverflow) |
+
+### User-Defined Primitive Types
+
+A user-defined primitive type is a type for which
+there is only one instance (for the purposes
+of the equals operator). This is borrowed from
+the [Pony language](https://www.ponylang.io/).
+The following user-defined primitive types are
+defined in the Panic standard library:
+
+```
+_decl_ ArithmeticOverflow
+_primitive_ _type_ _is_ (Error & Provenance) { }
+
+_decl_ ArithmeticDivisionByZero
+_primitive_ _type_ _is_ (Error & Provenance) { }
+
+_decl_ StackOverflow
+_primitive_ _type_ _is_ (Error & Provenance) { }
+
+_decl_ HeapOverflow
+_primitive_ _type_ _is_ (Error & Provenance) { }
+
+_decl_ None
+_primitive_ _type_ { }
+```
+
+`Error` and `Provenance` are built-in traits. `Error` values are returned early from a function when encountered by the `?` operator. `Provenance` values store the lexical location of the code at which the value was created.
+
+### Union Types
+
+Union types are the union of other types. These are usually named Enum types in other programming languages.
+A union type that is a union of a single type can be used to implement the 'newtype' pattern in Rust.
+
+### Value Types
+
+Value types are types that have value semantics.
+The allowed components (fields) of a value type are primitive types,
+user-defined primitive types, other value types,
+array types of the allowed types, and union types of the allowed types.
+Value types cannot be recursively defined.
+
+An example value type:
+```
+_decl_ Point _value_ _type_
+{
+   x: i32,
+   y: i32,
+   z: i32,
+}
+```
+
+### Reference Types
+
+Reference types are types that have reference semantics.
+References are collected by the garbage collector.
+Reference types can be recursively defined.
+
+An example reference type:
+
+```
+_decl_ LinkedList _union_ _type_ (None | Node) { }
+
+_decl_ Node _reference_ _type_
+{
+  item: i32,
+  next: (None | Node),
+}
+```
+
+### Resource Types
+
+Resource types are types that have reference semantics
+and have a finalizer.
+
+### Array Types
+
+### Slice Types

@@ -65,7 +65,7 @@ fn command_run(_input: &str, prog: Program) -> Result<ExitCode, PanicLangError> 
     let declarations = Declarations::new(syntax_tree);
     match declarations.syntax_tree.get(&Arc::new("main".into())) {
         Some(Decl::Func(func)) => {
-            if func.params.is_empty() {
+            if func.signature.params.is_empty() {
                 command_run_main(_input, func, &declarations)
             } else {
                 Err(PanicErrorImpl::EvaluationError(

@@ -26,6 +26,8 @@ impl Display for Decl {
         match self {
             Decl::Func(func) => write!(formatter, "{:.*}", precision, func),
             Decl::PrimitiveType(typ) => write!(formatter, "{:.*}", precision, typ),
+            Decl::UnionType(typ) => write!(formatter, "{:.*}", precision, typ),
+            Decl::ValueType(typ) => write!(formatter, "{:.*}", precision, typ),
         }
     }
 }
@@ -59,19 +61,87 @@ impl Display for PrimitiveTypeDecl {
     }
 }
 
-impl Display for FunctionDecl {
+impl Display for UnionTypeDecl {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
         let precision = formatter.precision().unwrap_or_default();
         indent(formatter, precision)?;
         write!(formatter, "_decl_ {} ", self.ident)?;
-        write!(formatter, "_fn_ (")?;
-        fmt_slice(&self.params, ", ", formatter)?;
-        writeln!(formatter, ") -> {} {{", self.return_type)?;
+        write!(formatter, "_union_ ")?;
+        write!(formatter, "_type_ ")?;
+        write!(formatter, "{} ", self.union)?;
+        if let Some(relations) = &self.relations {
+            write!(formatter, "_is_ {} ", relations)?;
+        }
+        write!(formatter, "{{ }}\n\n")?;
+        Ok(())
+    }
+}
+
+impl Display for ValueTypeDecl {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let precision = formatter.precision().unwrap_or_default();
+        indent(formatter, precision)?;
+        write!(formatter, "_decl_ {} ", self.ident)?;
+        write!(formatter, "_value_ ")?;
+        write!(formatter, "_type_ ")?;
+        if let Some(relations) = &self.relations {
+            write!(formatter, "_is_ {} ", relations)?;
+        }
+        write!(formatter, "{{\n")?;
+        for field in self.fields.iter() {
+            write!(formatter, "{:.*}", precision + 1, field)?;
+        }
+        for method in self.methods.iter() {
+            write!(formatter, "{:.*}", precision + 1, method)?;
+        }
+        write!(formatter, "}}\n")?;
+        Ok(())
+    }
+}
+
+impl Display for FunctionDecl {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let precision = formatter.precision().unwrap_or_default();
+        indent(formatter, precision)?;
+        write!(formatter, "_decl_ {} {}", self.ident, self.signature)?;
         for stmt in self.stmts.iter() {
             write!(formatter, "{:.*}", precision + 1, stmt)?;
         }
         indent(formatter, precision)?;
         write!(formatter, "}}\n\n")?;
+        Ok(())
+    }
+}
+
+impl Display for FieldDecl {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let precision = formatter.precision().unwrap_or_default();
+        indent(formatter, precision)?;
+        write!(formatter, "{} : {}", self.ident, self.type_expr)?;
+        write!(formatter, ",\n")?;
+        Ok(())
+    }
+}
+
+impl Display for MethodDecl {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let precision = formatter.precision().unwrap_or_default();
+        indent(formatter, precision)?;
+        write!(formatter, "{} : {}", self.ident, self.signature)?;
+        for stmt in self.stmts.iter() {
+            write!(formatter, "{:.*}", precision + 1, stmt)?;
+        }
+        indent(formatter, precision)?;
+        write!(formatter, "}}\n\n")?;
+        Ok(())
+    }
+}
+
+impl Display for FunctionSig {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "_fn_ (")?;
+        fmt_slice(&self.params, ", ", formatter)?;
+        writeln!(formatter, ") -> {} {{", self.return_type)?;
         Ok(())
     }
 }

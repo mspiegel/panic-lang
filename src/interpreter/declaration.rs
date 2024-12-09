@@ -39,17 +39,22 @@ pub(crate) static STACK_OVERFLOW: LazyLock<Arc<String>> =
     LazyLock::new(|| Arc::new(String::from("StackOverflow")));
 pub(crate) static HEAP_OVERFLOW: LazyLock<Arc<String>> =
     LazyLock::new(|| Arc::new(String::from("HeapOverflow")));
+pub(crate) static NONE: LazyLock<Arc<String>> = LazyLock::new(|| Arc::new(String::from("None")));
 
 impl Declarations {
     // TODO: move this into a panic source file
     fn preamble(primitives: &mut HashMap<Arc<String>, UserDefinedPrimitiveType>) {
         let keys = [
-            &*ARITHMETIC_OVERFLOW,
-            &*ARITHMETIC_DIVISION_BY_ZERO,
-            &*STACK_OVERFLOW,
-            &*HEAP_OVERFLOW,
+            (&*ARITHMETIC_OVERFLOW, true, true),
+            (&*ARITHMETIC_DIVISION_BY_ZERO, true, true),
+            (&*STACK_OVERFLOW, true, true),
+            (&*HEAP_OVERFLOW, true, true),
+            (&*NONE, false, false),
         ];
-        for key in keys {
+        for triple in keys {
+            let key = triple.0;
+            let error = triple.1;
+            let provenance = triple.2;
             primitives.insert(
                 key.clone(),
                 UserDefinedPrimitiveType {
@@ -57,8 +62,8 @@ impl Declarations {
                         name: key.clone(),
                         span: SpanPair { start: 0, end: 0 },
                     },
-                    error: true,
-                    provenance: true,
+                    error,
+                    provenance,
                 },
             );
         }

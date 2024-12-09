@@ -168,10 +168,10 @@ pub fn evaluate_expression(
                     .into())
                 }
             };
-            if func.params.len() != params.len() {
+            if func.signature.params.len() != params.len() {
                 return Err(PanicErrorImpl::EvaluationError(format!(
                     "expected {} parameters and received {} parameters at {:?}",
-                    func.params.len(),
+                    func.signature.params.len(),
                     params.len(),
                     iden.span,
                 ))
@@ -182,7 +182,7 @@ pub fn evaluate_expression(
                 .map(|e| evaluate_expression(e, env, decls))
                 .collect::<Result<Vec<_>, _>>()?;
             let mut environment = Environment::new(Some(env));
-            func.params
+            func.signature.params
                 .iter()
                 .zip(params)
                 .for_each(|(decl, val)| environment.set(decl.ident.name.clone(), val));
