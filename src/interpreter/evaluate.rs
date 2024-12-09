@@ -182,7 +182,8 @@ pub fn evaluate_expression(
                 .map(|e| evaluate_expression(e, env, decls))
                 .collect::<Result<Vec<_>, _>>()?;
             let mut environment = Environment::new(Some(env));
-            func.signature.params
+            func.signature
+                .params
                 .iter()
                 .zip(params)
                 .for_each(|(decl, val)| environment.set(decl.ident.name.clone(), val));
