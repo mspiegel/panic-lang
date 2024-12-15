@@ -3,10 +3,15 @@ WHITESPACE    =  _{ " " | "\t" | NEWLINE }
 program       =   { SOI ~ decl* ~ EOI }
 decl          =   { type_decl | fn_decl }
 
-type_decl     =   { prim_decl | union_decl | val_decl } // | res_decl | ref_decl
-prim_decl     =   { "_decl_" ~ ident ~ "_primitive_" ~ "_type_" ~ relation? ~ "{" ~ inner_funcs? ~ method_decls? ~ "}" }
-union_decl    =   { "_decl_" ~ ident ~ "_union_" ~ "_type_" ~ type_expr ~ relation? ~ "{" ~ inner_funcs? ~ method_decls? ~ "}" }
-val_decl      =   { "_decl_" ~ ident ~ "_value_" ~ "_type_" ~ relation? ~ "{" ~ field_decls? ~ inner_funcs? ~ method_decls? ~ "}" }
+type_decl     =   { prim_decl | union_decl | val_decl | res_decl | ref_decl }
+prim_decl     =   { "_decl_" ~ ident ~ "_primitive_" ~ "_type_" ~ relation? ~ type_body1 }
+union_decl    =   { "_decl_" ~ ident ~ "_union_" ~ "_type_" ~ type_expr ~ relation? ~ type_body1 }
+val_decl      =   { "_decl_" ~ ident ~ "_value_" ~ "_type_" ~ relation? ~ type_body2 }
+res_decl      =   { "_decl_" ~ ident ~ "_resource_" ~ "_type_" ~ relation? ~ type_body2 }
+ref_decl      =   { "_decl_" ~ ident ~ "_reference_" ~ "_type_" ~ relation? ~ type_body2 }
+
+type_body1    =   { "{" ~ inner_funcs? ~ method_decls? ~ "}" }
+type_body2    =   { "{" ~ field_decls? ~ inner_funcs? ~ method_decls? ~ "}" }
 
 relation      =   { "_is_" ~ decl_expr }
 decl_expr     =   { decl_isect | decl_ref }

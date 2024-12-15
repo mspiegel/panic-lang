@@ -305,23 +305,13 @@ fn primitive_type_decl(pair: Pair<Rule>) -> Result<PrimitiveTypeDecl, PanicLangE
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
-    let next = children.next();
-    let (relations, next) = match next {
-        Some(child) if child.as_rule() == Rule::decl_expr => {
-            (Some(decl_expression(child)?), children.next())
-        }
-        _ => (None, next),
+    let next = children.next().unwrap();
+    let (relations, next) = if next.as_rule() == Rule::decl_expr {
+        (Some(decl_expression(next)?), children.next().unwrap())
+    } else {
+        (None, next)
     };
-    let (inner_functions, next) = match next {
-        Some(child) if child.as_rule() == Rule::inner_funcs => {
-            (inner_funcs(child)?, children.next())
-        }
-        _ => (vec![], next),
-    };
-    let methods = match next {
-        Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
-        _ => vec![],
-    };
+    let (inner_functions, methods) = type_body1(next)?;
     Ok(PrimitiveTypeDecl {
         ident,
         relations,
@@ -336,23 +326,13 @@ fn union_type_decl(pair: Pair<Rule>) -> Result<UnionTypeDecl, PanicLangError> {
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
     let union = type_expression(children.next().unwrap())?;
-    let next = children.next();
-    let (relations, next) = match next {
-        Some(child) if child.as_rule() == Rule::decl_expr => {
-            (Some(decl_expression(child)?), children.next())
-        }
-        _ => (None, next),
+    let next = children.next().unwrap();
+    let (relations, next) = if next.as_rule() == Rule::decl_expr {
+        (Some(decl_expression(next)?), children.next().unwrap())
+    } else {
+        (None, next)
     };
-    let (inner_functions, next) = match next {
-        Some(child) if child.as_rule() == Rule::inner_funcs => {
-            (inner_funcs(child)?, children.next())
-        }
-        _ => (vec![], next),
-    };
-    let methods = match next {
-        Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
-        _ => vec![],
-    };
+    let (inner_functions, methods) = type_body1(next)?;
     Ok(UnionTypeDecl {
         ident,
         union,
@@ -367,13 +347,44 @@ fn val_type_decl(pair: Pair<Rule>) -> Result<ValueTypeDecl, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
-    let next = children.next();
-    let (relations, next) = match next {
-        Some(child) if child.as_rule() == Rule::decl_expr => {
-            (Some(decl_expression(child)?), children.next())
-        }
-        _ => (None, next),
+    let next = children.next().unwrap();
+    let (relations, next) = if next.as_rule() == Rule::decl_expr {
+        (Some(decl_expression(next)?), children.next().unwrap())
+    } else {
+        (None, next)
     };
+    let (fields, inner_functions, methods) = type_body2(next)?;
+    Ok(ValueTypeDecl {
+        ident,
+        relations,
+        span,
+        fields,
+        inner_functions,
+        methods,
+    })
+}
+
+fn type_body1(pair: Pair<Rule>) -> Result<(Vec<InnerFuncDecl>, Vec<MethodDecl>), PanicLangError> {
+    let mut children = pair.into_inner();
+    let next = children.next();
+    let (inner_functions, next) = match next {
+        Some(child) if child.as_rule() == Rule::inner_funcs => {
+            (inner_funcs(child)?, children.next())
+        }
+        _ => (vec![], next),
+    };
+    let methods = match next {
+        Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
+        _ => vec![],
+    };
+    Ok((inner_functions, methods))
+}
+
+fn type_body2(
+    pair: Pair<Rule>,
+) -> Result<(Vec<FieldDecl>, Vec<InnerFuncDecl>, Vec<MethodDecl>), PanicLangError> {
+    let mut children = pair.into_inner();
+    let next = children.next();
     let (fields, next) = match next {
         Some(child) if child.as_rule() == Rule::field_decls => {
             (field_decls(child)?, children.next())
@@ -390,14 +401,7 @@ fn val_type_decl(pair: Pair<Rule>) -> Result<ValueTypeDecl, PanicLangError> {
         Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
         _ => vec![],
     };
-    Ok(ValueTypeDecl {
-        ident,
-        relations,
-        span,
-        fields,
-        inner_functions,
-        methods,
-    })
+    Ok((fields, inner_functions, methods))
 }
 
 fn field_decls(pair: Pair<Rule>) -> Result<Vec<FieldDecl>, PanicLangError> {
