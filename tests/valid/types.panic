@@ -1,0 +1,38 @@
+_decl_ PrimitiveType _primitive_ _type_ { }
+
+_decl_ UnionType1 _union_ _type_ i32 { }
+
+_decl_ UnionType2 _union_ _type_ ( i32 | PrimitiveType ) { }
+
+_decl_ ValueType1 _value_ _type_ {
+    a: i32,
+    b: i32,
+    c: i32,
+}
+
+_decl_ ValueType2 _value_ _type_ {
+    a: i32,
+    b: i32,
+    c: i32,
+
+    add: _fn_(a: i32, b:i32) -> i32 {
+        _return_ a + b;
+    }
+
+    sub: _fn_(a: i32, b:i32) -> i32 {
+        _return_ a - b;
+    }
+}
+
+_decl_ ValueType3 _value_ _type_ {
+    a: i32,
+
+    add: _fn_(self, b:i32) -> i32 {
+        _return_ b;
+    }
+
+}
+
+_decl_ main _fn_ () -> i32 {
+    _return_ 0;
+ }

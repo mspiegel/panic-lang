@@ -56,7 +56,14 @@ impl Display for PrimitiveTypeDecl {
         if let Some(relations) = &self.relations {
             write!(formatter, "_is_ {} ", relations)?;
         }
-        write!(formatter, "{{ }}\n\n")?;
+        writeln!(formatter, "{{")?;
+        for func in self.inner_functions.iter() {
+            write!(formatter, "{:.*}", precision + 1, func)?;
+        }
+        for method in self.methods.iter() {
+            write!(formatter, "{:.*}", precision + 1, method)?;
+        }
+        writeln!(formatter, "}}")?;
         Ok(())
     }
 }
@@ -72,7 +79,14 @@ impl Display for UnionTypeDecl {
         if let Some(relations) = &self.relations {
             write!(formatter, "_is_ {} ", relations)?;
         }
-        write!(formatter, "{{ }}\n\n")?;
+        writeln!(formatter, "{{")?;
+        for func in self.inner_functions.iter() {
+            write!(formatter, "{:.*}", precision + 1, func)?;
+        }
+        for method in self.methods.iter() {
+            write!(formatter, "{:.*}", precision + 1, method)?;
+        }
+        writeln!(formatter, "}}")?;
         Ok(())
     }
 }
@@ -90,6 +104,12 @@ impl Display for ValueTypeDecl {
         writeln!(formatter, "{{")?;
         for field in self.fields.iter() {
             write!(formatter, "{:.*}", precision + 1, field)?;
+        }
+        if !self.inner_functions.is_empty() || !self.methods.is_empty() {
+            writeln!(formatter, "")?;
+        }
+        for func in self.inner_functions.iter() {
+            write!(formatter, "{:.*}", precision + 1, func)?;
         }
         for method in self.methods.iter() {
             write!(formatter, "{:.*}", precision + 1, method)?;
@@ -119,6 +139,20 @@ impl Display for FieldDecl {
         indent(formatter, precision)?;
         write!(formatter, "{} : {}", self.ident, self.type_expr)?;
         writeln!(formatter, ",")?;
+        Ok(())
+    }
+}
+
+impl Display for InnerFuncDecl {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+        let precision = formatter.precision().unwrap_or_default();
+        indent(formatter, precision)?;
+        write!(formatter, "{} : {}", self.ident, self.signature)?;
+        for stmt in self.stmts.iter() {
+            write!(formatter, "{:.*}", precision + 1, stmt)?;
+        }
+        indent(formatter, precision)?;
+        write!(formatter, "}}\n\n")?;
         Ok(())
     }
 }

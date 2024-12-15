@@ -4,19 +4,25 @@ program       =   { SOI ~ decl* ~ EOI }
 decl          =   { type_decl | fn_decl }
 
 type_decl     =   { prim_decl | union_decl | val_decl } // | res_decl | ref_decl
-prim_decl     =   { "_decl_" ~ ident ~ "_primitive_" ~ "_type_" ~ decl_relation? ~ "{" ~ decl_methods? ~ "}" }
-union_decl    =   { "_decl_" ~ ident ~ "_union_" ~ "_type_" ~ type_expr ~ decl_relation? ~ "{" ~ decl_methods? ~ "}" }
-val_decl      =   { "_decl_" ~ ident ~ "_value_" ~ "_type_" ~ decl_relation? ~ "{" ~ decl_fields? ~ decl_methods? ~ "}" }
+prim_decl     =   { "_decl_" ~ ident ~ "_primitive_" ~ "_type_" ~ relation? ~ "{" ~ inner_funcs? ~ method_decls? ~ "}" }
+union_decl    =   { "_decl_" ~ ident ~ "_union_" ~ "_type_" ~ type_expr ~ relation? ~ "{" ~ inner_funcs? ~ method_decls? ~ "}" }
+val_decl      =   { "_decl_" ~ ident ~ "_value_" ~ "_type_" ~ relation? ~ "{" ~ field_decls? ~ inner_funcs? ~ method_decls? ~ "}" }
 
-decl_relation =   { "_is_" ~ decl_expr }
+relation      =   { "_is_" ~ decl_expr }
 decl_expr     =   { decl_isect | decl_ref }
 decl_isect    =   { "(" ~ decl_ref ~ ( "&" ~ decl_ref )+ ~ ")" }
 decl_ref      =   { ident }
 
-decl_fields   =   { decl_field ~ ("," ~ decl_field)* ~ ","?  }
-decl_methods  =   { decl_method+ }
-decl_field    =   { ident ~ ":" ~ type_expr }
-decl_method   =   { ident ~ ":" ~ fn_signature ~ stmt_block }
+field_decls   =   { field_decl ~ ("," ~ field_decl)* ~ ","? }
+field_decl    =   { ident ~ ":" ~ type_expr }
+
+inner_funcs   =   { inner_func+ }
+inner_func    =   { ident ~ ":" ~ fn_signature ~ stmt_block }
+
+method_decls  =   { method_decl+ }
+method_decl   =   { ident ~ ":" ~ method_sig ~ stmt_block }
+method_sig    =   { "_fn_" ~ "(" ~ method_params? ~ ")" ~ "->" ~ type_expr }
+method_params =   { "self" ~ ("," ~ func_param)* ~ ","? }
 
 fn_decl       =   { "_decl_" ~ ident ~ fn_signature ~ stmt_block }
 fn_signature  =   { "_fn_" ~ "(" ~ func_params? ~ ")" ~ "->" ~ type_expr }
@@ -70,7 +76,7 @@ literal       =  _{ int_literal | bool_literal }
 int_literal   =  @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* }
 bool_literal  =  @{ "true" | "false" }
 
-bare_keyword  =  @{ "true" | "false" }
+bare_keyword  =  @{ "true" | "false" | "self" }
 keyword       =  @{ "_" ~ ASCII_ALPHANUMERIC+ ~ "_" }
 identifier    =  @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 

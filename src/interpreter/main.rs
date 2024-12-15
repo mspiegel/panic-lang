@@ -124,7 +124,9 @@ mod tests {
             file.read_to_end(&mut input).expect("error reading file");
             let input = String::from_utf8(input).expect("error converting file to string");
             let result = run_string(&input);
-            assert!(result.is_ok());
+            if result.is_err() {
+                panic!("Error: {:?}", result.err().unwrap());
+            }
         }
     }
 }

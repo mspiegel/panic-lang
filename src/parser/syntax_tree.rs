@@ -140,6 +140,8 @@ pub struct FuncParamDecl {
 pub struct PrimitiveTypeDecl {
     pub ident: Identifier,
     pub relations: Option<DeclExpr>,
+    pub inner_functions: Vec<InnerFuncDecl>,
+    pub methods: Vec<MethodDecl>,
     pub span: SpanPair,
 }
 
@@ -148,6 +150,8 @@ pub struct UnionTypeDecl {
     pub ident: Identifier,
     pub union: TypeExpr,
     pub relations: Option<DeclExpr>,
+    pub inner_functions: Vec<InnerFuncDecl>,
+    pub methods: Vec<MethodDecl>,
     pub span: SpanPair,
 }
 
@@ -156,6 +160,7 @@ pub struct ValueTypeDecl {
     pub ident: Identifier,
     pub relations: Option<DeclExpr>,
     pub fields: Vec<FieldDecl>,
+    pub inner_functions: Vec<InnerFuncDecl>,
     pub methods: Vec<MethodDecl>,
     pub span: SpanPair,
 }
@@ -164,6 +169,14 @@ pub struct ValueTypeDecl {
 pub struct FieldDecl {
     pub ident: Identifier,
     pub type_expr: TypeExpr,
+    pub span: SpanPair,
+}
+
+#[derive(Debug)]
+pub struct InnerFuncDecl {
+    pub ident: Identifier,
+    pub signature: FunctionSig,
+    pub stmts: Vec<Stmt>,
     pub span: SpanPair,
 }
 
@@ -282,6 +295,8 @@ fn type_decl(pair: Pair<Rule>) -> Result<Decl, PanicLangError> {
     let child = pair.into_inner().next().unwrap();
     match child.as_rule() {
         Rule::prim_decl => Ok(Decl::PrimitiveType(primitive_type_decl(child)?)),
+        Rule::union_decl => Ok(Decl::UnionType(union_type_decl(child)?)),
+        Rule::val_decl => Ok(Decl::ValueType(val_type_decl(child)?)),
         r => PanicErrorImpl::SyntaxTreeError(format!("unexpected type declaration {:?}", r)).into(),
     }
 }
@@ -290,13 +305,153 @@ fn primitive_type_decl(pair: Pair<Rule>) -> Result<PrimitiveTypeDecl, PanicLangE
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let ident = identifier(children.next().unwrap())?;
-    let relations = match children.next() {
-        Some(pair) => Some(decl_expression(pair.into_inner().next().unwrap())?),
-        None => None,
+    let next = children.next();
+    let (relations, next) = match next {
+        Some(child) if child.as_rule() == Rule::decl_expr => {
+            (Some(decl_expression(child)?), children.next())
+        }
+        _ => (None, next),
+    };
+    let (inner_functions, next) = match next {
+        Some(child) if child.as_rule() == Rule::inner_funcs => {
+            (inner_funcs(child)?, children.next())
+        }
+        _ => (vec![], next),
+    };
+    let methods = match next {
+        Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
+        _ => vec![],
     };
     Ok(PrimitiveTypeDecl {
         ident,
         relations,
+        inner_functions,
+        methods,
+        span,
+    })
+}
+
+fn union_type_decl(pair: Pair<Rule>) -> Result<UnionTypeDecl, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let ident = identifier(children.next().unwrap())?;
+    let union = type_expression(children.next().unwrap())?;
+    let next = children.next();
+    let (relations, next) = match next {
+        Some(child) if child.as_rule() == Rule::decl_expr => {
+            (Some(decl_expression(child)?), children.next())
+        }
+        _ => (None, next),
+    };
+    let (inner_functions, next) = match next {
+        Some(child) if child.as_rule() == Rule::inner_funcs => {
+            (inner_funcs(child)?, children.next())
+        }
+        _ => (vec![], next),
+    };
+    let methods = match next {
+        Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
+        _ => vec![],
+    };
+    Ok(UnionTypeDecl {
+        ident,
+        union,
+        relations,
+        inner_functions,
+        methods,
+        span,
+    })
+}
+
+fn val_type_decl(pair: Pair<Rule>) -> Result<ValueTypeDecl, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let ident = identifier(children.next().unwrap())?;
+    let next = children.next();
+    let (relations, next) = match next {
+        Some(child) if child.as_rule() == Rule::decl_expr => {
+            (Some(decl_expression(child)?), children.next())
+        }
+        _ => (None, next),
+    };
+    let (fields, next) = match next {
+        Some(child) if child.as_rule() == Rule::field_decls => {
+            (field_decls(child)?, children.next())
+        }
+        _ => (vec![], next),
+    };
+    let (inner_functions, next) = match next {
+        Some(child) if child.as_rule() == Rule::inner_funcs => {
+            (inner_funcs(child)?, children.next())
+        }
+        _ => (vec![], next),
+    };
+    let methods = match next {
+        Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
+        _ => vec![],
+    };
+    Ok(ValueTypeDecl {
+        ident,
+        relations,
+        span,
+        fields,
+        inner_functions,
+        methods,
+    })
+}
+
+fn field_decls(pair: Pair<Rule>) -> Result<Vec<FieldDecl>, PanicLangError> {
+    pair.into_inner()
+        .map(field_decl)
+        .collect::<Result<Vec<_>, _>>()
+}
+
+fn field_decl(pair: Pair<Rule>) -> Result<FieldDecl, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let ident = identifier(children.next().unwrap())?;
+    let type_expr = type_expression(children.next().unwrap())?;
+    Ok(FieldDecl {
+        ident,
+        type_expr,
+        span,
+    })
+}
+
+fn inner_funcs(pair: Pair<Rule>) -> Result<Vec<InnerFuncDecl>, PanicLangError> {
+    pair.into_inner()
+        .map(inner_func)
+        .collect::<Result<Vec<_>, _>>()
+}
+
+fn inner_func(pair: Pair<Rule>) -> Result<InnerFuncDecl, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let ident = identifier(children.next().unwrap())?;
+    let signature = function_sig(children.next().unwrap())?;
+    let stmts = statement_block(children.next().unwrap())?;
+    Ok(InnerFuncDecl {
+        ident,
+        signature,
+        stmts,
+        span,
+    })
+}
+
+fn methods(pair: Pair<Rule>) -> Result<Vec<MethodDecl>, PanicLangError> {
+    pair.into_inner().map(method).collect::<Result<Vec<_>, _>>()
+}
+
+fn method(pair: Pair<Rule>) -> Result<MethodDecl, PanicLangError> {
+    let span = pair.as_span().into();
+    let mut children = pair.into_inner();
+    let ident = identifier(children.next().unwrap())?;
+    let signature = function_sig(children.next().unwrap())?;
+    let stmts = statement_block(children.next().unwrap())?;
+    Ok(MethodDecl {
+        ident,
+        signature,
+        stmts,
         span,
     })
 }
@@ -319,7 +474,7 @@ fn function_sig(pair: Pair<Rule>) -> Result<FunctionSig, PanicLangError> {
     let span = pair.as_span().into();
     let mut children = pair.into_inner();
     let mut next = children.next().unwrap();
-    let params = if next.as_rule() == Rule::func_params {
+    let params = if next.as_rule() == Rule::func_params || next.as_rule() == Rule::method_params {
         let params = next;
         next = children.next().unwrap();
         func_params_decl(params)?
@@ -625,7 +780,10 @@ mod tests {
             let mut pairs = <PanicParser as pest::Parser<_>>::parse(Rule::program, &input)
                 .expect("error parsing file");
             let top_node = pairs.next().unwrap();
-            assert!(program(top_node).is_ok());
+            let result = program(top_node);
+            if result.is_err() {
+                panic!("Error parsing file: {:?}", result.err().unwrap());
+            }
         }
     }
 
