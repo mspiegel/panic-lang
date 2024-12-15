@@ -106,7 +106,7 @@ impl Display for ValueTypeDecl {
             write!(formatter, "{:.*}", precision + 1, field)?;
         }
         if !self.inner_functions.is_empty() || !self.methods.is_empty() {
-            writeln!(formatter, "")?;
+            writeln!(formatter)?;
         }
         for func in self.inner_functions.iter() {
             write!(formatter, "{:.*}", precision + 1, func)?;
