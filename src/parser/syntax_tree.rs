@@ -137,6 +137,19 @@ pub struct FuncParamDecl {
 }
 
 #[derive(Debug)]
+pub struct TypeBody1 {
+    pub inner_functions: Vec<InnerFuncDecl>,
+    pub methods: Vec<MethodDecl>,
+}
+
+#[derive(Debug)]
+pub struct TypeBody2 {
+    pub fields: Vec<FieldDecl>,
+    pub inner_functions: Vec<InnerFuncDecl>,
+    pub methods: Vec<MethodDecl>,
+}
+
+#[derive(Debug)]
 pub struct PrimitiveTypeDecl {
     pub ident: Identifier,
     pub relations: Option<DeclExpr>,
@@ -311,12 +324,12 @@ fn primitive_type_decl(pair: Pair<Rule>) -> Result<PrimitiveTypeDecl, PanicLangE
     } else {
         (None, next)
     };
-    let (inner_functions, methods) = type_body1(next)?;
+    let body = type_body1(next)?;
     Ok(PrimitiveTypeDecl {
         ident,
         relations,
-        inner_functions,
-        methods,
+        inner_functions: body.inner_functions,
+        methods: body.methods,
         span,
     })
 }
@@ -332,13 +345,13 @@ fn union_type_decl(pair: Pair<Rule>) -> Result<UnionTypeDecl, PanicLangError> {
     } else {
         (None, next)
     };
-    let (inner_functions, methods) = type_body1(next)?;
+    let body = type_body1(next)?;
     Ok(UnionTypeDecl {
         ident,
         union,
         relations,
-        inner_functions,
-        methods,
+        inner_functions: body.inner_functions,
+        methods: body.methods,
         span,
     })
 }
@@ -353,18 +366,18 @@ fn val_type_decl(pair: Pair<Rule>) -> Result<ValueTypeDecl, PanicLangError> {
     } else {
         (None, next)
     };
-    let (fields, inner_functions, methods) = type_body2(next)?;
+    let body = type_body2(next)?;
     Ok(ValueTypeDecl {
         ident,
         relations,
         span,
-        fields,
-        inner_functions,
-        methods,
+        fields: body.fields,
+        inner_functions: body.inner_functions,
+        methods: body.methods,
     })
 }
 
-fn type_body1(pair: Pair<Rule>) -> Result<(Vec<InnerFuncDecl>, Vec<MethodDecl>), PanicLangError> {
+fn type_body1(pair: Pair<Rule>) -> Result<TypeBody1, PanicLangError> {
     let mut children = pair.into_inner();
     let next = children.next();
     let (inner_functions, next) = match next {
@@ -377,12 +390,13 @@ fn type_body1(pair: Pair<Rule>) -> Result<(Vec<InnerFuncDecl>, Vec<MethodDecl>),
         Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
         _ => vec![],
     };
-    Ok((inner_functions, methods))
+    Ok(TypeBody1 {
+        inner_functions,
+        methods,
+    })
 }
 
-fn type_body2(
-    pair: Pair<Rule>,
-) -> Result<(Vec<FieldDecl>, Vec<InnerFuncDecl>, Vec<MethodDecl>), PanicLangError> {
+fn type_body2(pair: Pair<Rule>) -> Result<TypeBody2, PanicLangError> {
     let mut children = pair.into_inner();
     let next = children.next();
     let (fields, next) = match next {
@@ -401,7 +415,11 @@ fn type_body2(
         Some(child) if child.as_rule() == Rule::method_decls => methods(child)?,
         _ => vec![],
     };
-    Ok((fields, inner_functions, methods))
+    Ok(TypeBody2 {
+        fields,
+        inner_functions,
+        methods,
+    })
 }
 
 fn field_decls(pair: Pair<Rule>) -> Result<Vec<FieldDecl>, PanicLangError> {
