@@ -1,0 +1,11 @@
+[package]
+name = "panic-lang"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "pani"
+path = "src/main.rs"
+
+[dependencies]
+logos = {version = "0.15.0", features = ["forbid_unsafe"]}
