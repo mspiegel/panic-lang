@@ -5,7 +5,7 @@ edition = "2021"
 
 [[bin]]
 name = "pani"
-path = "src/main.rs"
+path = "src/interpreter/main.rs"
 
 [dependencies]
 logos = {version = "0.15", features = [ "forbid_unsafe" ] }
