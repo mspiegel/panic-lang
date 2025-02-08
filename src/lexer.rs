@@ -59,9 +59,11 @@ pub fn lex(input: &str) -> Result<Vec<Token>> {
             })),
         }
     }
-    if errors.len() > 0 {
-        Err(PanicLangError::SeveralErrors(SeveralErrors { errors }).into())
-    } else {
+    if errors.is_empty() {
         Ok(tokens)
+    } else if errors.len() == 1 {
+        Err(errors.into_iter().next().unwrap().into())
+    } else {
+        Err(PanicLangError::SeveralErrors(SeveralErrors { errors }).into())
     }
 }
