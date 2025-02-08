@@ -8,4 +8,7 @@ name = "pani"
 path = "src/main.rs"
 
 [dependencies]
-logos = {version = "0.15.0", features = ["forbid_unsafe"]}
+logos = {version = "0.15", features = [ "forbid_unsafe" ] }
+miette = { version = "7.5", features = [ "fancy" ] }
+num-bigint = "0.4"
+thiserror = "1"
