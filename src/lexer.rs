@@ -1,9 +1,10 @@
 use logos::Logos;
-use miette::Result;
 use miette::SourceSpan;
 
+use crate::errors::to_span;
 use crate::errors::LexerError;
 use crate::errors::PanicLangError;
+use crate::errors::Result;
 use crate::errors::SeveralErrors;
 
 #[derive(Logos, Debug, PartialEq)]
@@ -47,16 +48,20 @@ pub enum Token {
     Identifier,
 }
 
-pub fn lex(input: &str) -> Result<Vec<Token>> {
+pub struct TokenSpan {
+    pub token: Token,
+    pub span: SourceSpan,
+}
+
+pub fn lex(input: &str) -> Result<Vec<TokenSpan>> {
     let mut tokens = vec![];
     let mut errors = vec![];
     let lexer = Token::lexer(input);
-    for (token, span) in lexer.spanned() {
+    for (token, range) in lexer.spanned() {
+        let span = to_span(&range);
         match token {
-            Ok(token) => tokens.push(token),
-            Err(_) => errors.push(PanicLangError::LexerError(LexerError {
-                at: SourceSpan::new(span.start.into(), span.end - span.start),
-            })),
+            Ok(token) => tokens.push(TokenSpan { token, span }),
+            Err(_) => errors.push(PanicLangError::LexerError(LexerError { at: span })),
         }
     }
     if errors.is_empty() {
@@ -64,6 +69,26 @@ pub fn lex(input: &str) -> Result<Vec<Token>> {
     } else if errors.len() == 1 {
         Err(errors.into_iter().next().unwrap().into())
     } else {
-        Err(PanicLangError::SeveralErrors(SeveralErrors { errors }).into())
+        Err(PanicLangError::SeveralErrors(SeveralErrors { errors }))
+    }
+}
+
+impl Token {
+    pub fn str(&self) -> &'static str {
+        match self {
+            Token::Bool(val) if *val == true => "true",
+            Token::Bool(_) => "false",
+            Token::Define => "define",
+            Token::Lambda => "lambda",
+            Token::Cond => "cond",
+            Token::Else => "else",
+            Token::LParen => "(",
+            Token::RParen => ")",
+            Token::Question => "?",
+            Token::Colon => ":",
+            Token::RArrow => "->",
+            Token::IntLiteral => "<integer literal>",
+            Token::Identifier => "<identifier>",
+        }
     }
 }
