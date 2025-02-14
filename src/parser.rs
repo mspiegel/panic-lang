@@ -161,7 +161,25 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
     let expr = match next.token {
         Token::RParen => Expr::EmptyList,
         Token::Cond => {
-            todo!()
+            let mut cond_clauses = vec![];
+            _ = expected_next(tokens)?;
+            loop {
+                consume_lparen(tokens)?;
+                if matches!(expected_peek(tokens)?.token, Token::Else) {
+                    break;
+                }
+                let test = parse_expr(input, tokens)?;
+                let action = parse_expr(input, tokens)?;
+                consume_rparen(tokens)?;
+                cond_clauses.push(CondClause { test, action });
+            }
+            _ = expected_next(tokens)?;
+            let else_clause = Box::new(parse_expr(input, tokens)?);
+            consume_rparen(tokens)?;
+            Expr::Cond {
+                cond_clauses,
+                else_clause,
+            }
         }
         Token::Lambda => {
             let mut formals = vec![];
@@ -282,7 +300,13 @@ impl fmt::Display for Expr {
             Expr::Cond {
                 cond_clauses,
                 else_clause,
-            } => todo!(),
+            } => {
+                write!(f, "(cond ")?;
+                for cond_clause in cond_clauses {
+                    write!(f, "({} {}) ", cond_clause.test, cond_clause.action)?;
+                }
+                write!(f, "(else {}))", else_clause)
+            }
             Expr::Lambda { formals, body } => {
                 write!(f, "(lambda (")?;
                 write_slice(f, formals)?;
@@ -314,21 +338,25 @@ mod tests {
         parse_expr(input, &mut iter)
     }
 
-    fn test_roundtrip_expr(input: &str, output: &str) -> Result<()> {
+    fn test_roundtrip_expr(input: &str) -> Result<()> {
         let expr = parse_input_expr(input)?;
-        assert_eq!(format!("{}", expr), output);
+        assert_eq!(format!("{}", expr), input);
         Ok(())
     }
 
     #[test]
     fn test_parse_expr() -> Result<()> {
-        test_roundtrip_expr("()", "()")?;
-        test_roundtrip_expr("0", "0")?;
-        test_roundtrip_expr("i32", "i32")?;
-        test_roundtrip_expr("(foo)", "(foo)")?;
-        test_roundtrip_expr("(foo 1 2 3)", "(foo 1 2 3)")?;
-        test_roundtrip_expr("(-> () ())", "(-> () ())")?;
-        test_roundtrip_expr("(-> (i32) i32)", "(-> (i32) i32)")?;
+        test_roundtrip_expr("()")?;
+        test_roundtrip_expr("0")?;
+        test_roundtrip_expr("i32")?;
+        test_roundtrip_expr("true")?;
+        test_roundtrip_expr("false")?;
+        test_roundtrip_expr("(foo)")?;
+        test_roundtrip_expr("(foo 1 2 3)")?;
+        test_roundtrip_expr("(-> () ())")?;
+        test_roundtrip_expr("(-> (i32) i32)")?;
+        test_roundtrip_expr("(cond (else ()))")?;
+        test_roundtrip_expr("(cond ((< a 0) true) ((== a 0) false) (else ()))")?;
         Ok(())
     }
 }
