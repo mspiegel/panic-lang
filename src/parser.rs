@@ -101,6 +101,7 @@ fn to_string(input: &str, at: SourceSpan) -> String {
 
 fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Definition> {
     consume_lparen(tokens)?;
+    consume_token(tokens, Token::Define)?;
     let identifier = parse_typed_identifier(input, tokens)?;
     let body = parse_expr(input, tokens)?;
     consume_rparen(tokens)?;
@@ -112,11 +113,8 @@ fn parse_typed_identifier(
     tokens: &mut Peekable<IntoIter<TokenSpan>>,
 ) -> Result<TypedIden> {
     consume_lparen(tokens)?;
-    let mut next = expected_next(tokens)?;
-    if !matches!(next.token, Token::Colon) {
-        return Err(expected_token(next.span, Token::Colon));
-    }
-    next = expected_next(tokens)?;
+    consume_token(tokens, Token::Colon)?;
+    let next = expected_next(tokens)?;
     if !matches!(next.token, Token::Identifier) {
         return Err(expected_token(next.span, Token::Identifier));
     }
@@ -233,20 +231,20 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
     Ok(expr)
 }
 
-fn consume_lparen(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<()> {
+fn consume_token(tokens: &mut Peekable<IntoIter<TokenSpan>>, expected: Token) -> Result<()> {
     let next = expected_next(tokens)?;
-    if next.token != Token::LParen {
-        return Err(expected_token(next.span, Token::LParen));
+    if next.token != expected {
+        return Err(expected_token(next.span, expected));
     }
     Ok(())
 }
 
+fn consume_lparen(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<()> {
+    consume_token(tokens, Token::LParen)
+}
+
 fn consume_rparen(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<()> {
-    let next = expected_next(tokens)?;
-    if next.token != Token::RParen {
-        return Err(expected_token(next.span, Token::RParen));
-    }
-    Ok(())
+    consume_token(tokens, Token::RParen)
 }
 
 pub fn parse(input: &str, tokens: Vec<TokenSpan>) -> Result<Program> {
@@ -327,6 +325,24 @@ impl fmt::Display for Expr {
     }
 }
 
+impl fmt::Display for TypedIden {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "(: {} {})", self.identifier, self.type_expr)
+    }
+}
+
+impl fmt::Display for Definition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "(define {} {})", self.identifier, self.body)
+    }
+}
+
+impl fmt::Display for Program {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write_slice(f, &self.definitions)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -338,9 +354,20 @@ mod tests {
         parse_expr(input, &mut iter)
     }
 
+    fn parse_input_program(input: &str) -> Result<Program> {
+        let tokens = lex(input)?;
+        parse(input, tokens)
+    }
+
     fn test_roundtrip_expr(input: &str) -> Result<()> {
         let expr = parse_input_expr(input)?;
         assert_eq!(format!("{}", expr), input);
+        Ok(())
+    }
+
+    fn test_roundtrip_program(input: &str) -> Result<()> {
+        let program = parse_input_program(input)?;
+        assert_eq!(format!("{}", program), input);
         Ok(())
     }
 
@@ -353,10 +380,19 @@ mod tests {
         test_roundtrip_expr("false")?;
         test_roundtrip_expr("(foo)")?;
         test_roundtrip_expr("(foo 1 2 3)")?;
+        test_roundtrip_expr("(lambda (x) x)")?;
+        test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;
         test_roundtrip_expr("(-> (i32) i32)")?;
         test_roundtrip_expr("(cond (else ()))")?;
         test_roundtrip_expr("(cond ((< a 0) true) ((== a 0) false) (else ()))")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_program() -> Result<()> {
+        test_roundtrip_program("(define (: foo i32) 0)")?;
+        test_roundtrip_program("(define (: main (-> () ())) (lambda () ()))")?;
         Ok(())
     }
 }
