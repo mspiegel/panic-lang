@@ -1,3 +1,4 @@
+use std::fmt;
 use std::iter::Peekable;
 use std::str::FromStr;
 use std::vec::IntoIter;
@@ -7,6 +8,7 @@ use num_bigint::BigInt;
 
 use crate::errors::PanicLangError;
 use crate::errors::ParserErrorExpectedToken;
+use crate::errors::ParserErrorUnexpectedToken;
 use crate::errors::Result;
 use crate::lexer::Token;
 use crate::lexer::TokenSpan;
@@ -18,9 +20,14 @@ pub struct Program {
 
 #[derive(Debug)]
 pub struct Definition {
+    pub identifier: TypedIden,
+    pub body: Expr,
+}
+
+#[derive(Debug)]
+pub struct TypedIden {
     pub identifier: String,
     pub type_expr: Expr,
-    pub body: Expr,
 }
 
 #[derive(Debug)]
@@ -68,6 +75,13 @@ fn expected_next(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<TokenSpan
         .ok_or(PanicLangError::ParserErrorUnexpectedEOF)
 }
 
+fn expected_peek(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<TokenSpan> {
+    tokens
+        .peek()
+        .cloned()
+        .ok_or(PanicLangError::ParserErrorUnexpectedEOF)
+}
+
 fn expected_token(at: SourceSpan, expected: Token) -> PanicLangError {
     PanicLangError::ParserErrorExpectedToken(ParserErrorExpectedToken {
         at,
@@ -86,13 +100,21 @@ fn to_string(input: &str, at: SourceSpan) -> String {
 }
 
 fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Definition> {
+    consume_lparen(tokens)?;
+    let identifier = parse_typed_identifier(input, tokens)?;
+    let body = parse_expr(input, tokens)?;
+    consume_rparen(tokens)?;
+    Ok(Definition { identifier, body })
+}
+
+fn parse_typed_identifier(
+    input: &str,
+    tokens: &mut Peekable<IntoIter<TokenSpan>>,
+) -> Result<TypedIden> {
+    consume_lparen(tokens)?;
     let mut next = expected_next(tokens)?;
-    if !matches!(next.token, Token::LParen) {
-        return Err(expected_token(next.span, Token::LParen));
-    }
-    next = expected_next(tokens)?;
-    if !matches!(next.token, Token::Define) {
-        return Err(expected_token(next.span, Token::Define));
+    if !matches!(next.token, Token::Colon) {
+        return Err(expected_token(next.span, Token::Colon));
     }
     next = expected_next(tokens)?;
     if !matches!(next.token, Token::Identifier) {
@@ -100,11 +122,10 @@ fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> 
     }
     let identifier = to_string(input, next.span);
     let type_expr = parse_expr(input, tokens)?;
-    let body = parse_expr(input, tokens)?;
-    Ok(Definition {
+    consume_rparen(tokens)?;
+    Ok(TypedIden {
         identifier,
         type_expr,
-        body,
     })
 }
 
@@ -136,29 +157,78 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             ))
         }
     }
-    next = expected_next(tokens)?;
-    match next.token {
-        Token::RParen => {
-            return Ok(Expr::EmptyList);
+    next = expected_peek(tokens)?;
+    let expr = match next.token {
+        Token::RParen => Expr::EmptyList,
+        Token::Cond => {
+            todo!()
         }
-        Token::Cond => {}
-        Token::Colon => {}
-        Token::Lambda => {}
+        Token::Lambda => {
+            let mut formals = vec![];
+            _ = expected_next(tokens)?;
+            consume_lparen(tokens)?;
+            next = expected_next(tokens)?;
+            while !matches!(next.token, Token::RParen) {
+                formals.push(to_string(input, next.span));
+                next = expected_next(tokens)?;
+            }
+            let body = Box::new(parse_expr(input, tokens)?);
+            Expr::Lambda { formals, body }
+        }
         Token::Question => {
+            _ = expected_next(tokens)?;
             let expr = parse_expr(input, tokens)?;
-            return Ok(Expr::Question(Box::new(expr)));
+            Expr::Question(Box::new(expr))
         }
-        Token::RArrow => {}
-        _ => {
-            // everything else is an application expression
+        Token::RArrow => {
+            let mut argument_types = vec![];
+            _ = expected_next(tokens)?;
+            consume_lparen(tokens)?;
+            while expected_peek(tokens)?.token != Token::RParen {
+                argument_types.push(parse_expr(input, tokens)?);
+            }
+            consume_rparen(tokens)?;
+            let return_type = Box::new(parse_expr(input, tokens)?);
+            Expr::RArrow {
+                argument_types,
+                return_type,
+            }
+        }
+        Token::Identifier | Token::LParen => {
             let function = Box::new(parse_expr(input, tokens)?);
             let mut arguments = vec![];
-            return Ok(Expr::Application {
+            while expected_peek(tokens)?.token != Token::RParen {
+                arguments.push(parse_expr(input, tokens)?);
+            }
+            Expr::Application {
                 function,
                 arguments,
-            });
+            }
         }
+        Token::Colon | Token::Define | Token::Bool(_) | Token::Else | Token::IntLiteral => {
+            return Err(PanicLangError::ParserErrorUnexpectedToken(
+                ParserErrorUnexpectedToken { at: next.span },
+            ));
+        }
+    };
+    consume_rparen(tokens)?;
+    Ok(expr)
+}
+
+fn consume_lparen(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<()> {
+    let next = expected_next(tokens)?;
+    if next.token != Token::LParen {
+        return Err(expected_token(next.span, Token::LParen));
     }
+    Ok(())
+}
+
+fn consume_rparen(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<()> {
+    let next = expected_next(tokens)?;
+    if next.token != Token::RParen {
+        return Err(expected_token(next.span, Token::RParen));
+    }
+    Ok(())
 }
 
 pub fn parse(input: &str, tokens: Vec<TokenSpan>) -> Result<Program> {
@@ -168,4 +238,97 @@ pub fn parse(input: &str, tokens: Vec<TokenSpan>) -> Result<Program> {
         definitions.push(parse_definition(input, &mut iter)?);
     }
     Ok(Program { definitions })
+}
+
+fn write_slice<T: fmt::Display>(f: &mut fmt::Formatter, v: &[T]) -> fmt::Result {
+    for (pos, expr) in v.iter().enumerate() {
+        write!(f, "{}", expr)?;
+        if pos < (v.len() - 1) {
+            write!(f, " ")?;
+        }
+    }
+    Ok(())
+}
+
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Expr::EmptyList => {
+                write!(f, "()")
+            }
+            Expr::IntLiteral(i) => {
+                write!(f, "{}", i)
+            }
+            Expr::BoolLiteral(true) => {
+                write!(f, "true")
+            }
+            Expr::BoolLiteral(false) => {
+                write!(f, "false")
+            }
+            Expr::Identifier(iden) => {
+                write!(f, "{}", iden)
+            }
+            Expr::Application {
+                function,
+                arguments,
+            } => {
+                write!(f, "({}", function)?;
+                if !arguments.is_empty() {
+                    write!(f, " ")?;
+                    write_slice(f, arguments)?;
+                }
+                write!(f, ")")
+            }
+            Expr::Cond {
+                cond_clauses,
+                else_clause,
+            } => todo!(),
+            Expr::Lambda { formals, body } => {
+                write!(f, "(lambda (")?;
+                write_slice(f, formals)?;
+                write!(f, ") {})", body)
+            }
+            Expr::Question(expr) => {
+                write!(f, "(? {})", expr)
+            }
+            Expr::RArrow {
+                argument_types,
+                return_type,
+            } => {
+                write!(f, "(-> (")?;
+                write_slice(f, argument_types)?;
+                write!(f, ") {})", return_type)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lexer::lex;
+
+    fn parse_input_expr(input: &str) -> Result<Expr> {
+        let tokens = lex(input)?;
+        let mut iter = tokens.into_iter().peekable();
+        parse_expr(input, &mut iter)
+    }
+
+    fn test_roundtrip_expr(input: &str, output: &str) -> Result<()> {
+        let expr = parse_input_expr(input)?;
+        assert_eq!(format!("{}", expr), output);
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_expr() -> Result<()> {
+        test_roundtrip_expr("()", "()")?;
+        test_roundtrip_expr("0", "0")?;
+        test_roundtrip_expr("i32", "i32")?;
+        test_roundtrip_expr("(foo)", "(foo)")?;
+        test_roundtrip_expr("(foo 1 2 3)", "(foo 1 2 3)")?;
+        test_roundtrip_expr("(-> () ())", "(-> () ())")?;
+        test_roundtrip_expr("(-> (i32) i32)", "(-> (i32) i32)")?;
+        Ok(())
+    }
 }

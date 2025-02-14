@@ -20,6 +20,10 @@ pub enum PanicLangError {
     #[diagnostic(transparent)]
     ParserErrorExpectedToken(#[from] ParserErrorExpectedToken),
 
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    ParserErrorUnexpectedToken(#[from] ParserErrorUnexpectedToken),
+
     #[error("unexpected end of file (EOF)")]
     #[diagnostic(code(panic_lang::unexpected_eof))]
     ParserErrorUnexpectedEOF,
@@ -42,6 +46,13 @@ pub struct ParserErrorExpectedToken {
     #[label("here")]
     pub at: SourceSpan,
     pub expected: &'static str,
+}
+
+#[derive(Error, Diagnostic, Debug)]
+#[error("unexpected token")]
+pub struct ParserErrorUnexpectedToken {
+    #[label("here")]
+    pub at: SourceSpan,
 }
 
 #[derive(Error, Diagnostic, Debug)]

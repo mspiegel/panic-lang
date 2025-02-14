@@ -7,7 +7,7 @@ use crate::errors::PanicLangError;
 use crate::errors::Result;
 use crate::errors::SeveralErrors;
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Debug, Clone, PartialEq)]
 #[logos(skip r"[ \t\n\f]+")]
 pub enum Token {
     #[token("false", |_| false)]
@@ -48,6 +48,7 @@ pub enum Token {
     Identifier,
 }
 
+#[derive(Clone)]
 pub struct TokenSpan {
     pub token: Token,
     pub span: SourceSpan,
@@ -67,7 +68,7 @@ pub fn lex(input: &str) -> Result<Vec<TokenSpan>> {
     if errors.is_empty() {
         Ok(tokens)
     } else if errors.len() == 1 {
-        Err(errors.into_iter().next().unwrap().into())
+        Err(errors.into_iter().next().unwrap())
     } else {
         Err(PanicLangError::SeveralErrors(SeveralErrors { errors }))
     }
@@ -76,8 +77,13 @@ pub fn lex(input: &str) -> Result<Vec<TokenSpan>> {
 impl Token {
     pub fn str(&self) -> &'static str {
         match self {
-            Token::Bool(val) if *val == true => "true",
-            Token::Bool(_) => "false",
+            Token::Bool(val) => {
+                if *val {
+                    "true"
+                } else {
+                    "false"
+                }
+            }
             Token::Define => "define",
             Token::Lambda => "lambda",
             Token::Cond => "cond",
