@@ -98,3 +98,23 @@ impl Token {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lexer() -> Result<()> {
+        let tokens = lex("true false define lambda cond else ( ) ? : -> 0 foo")?;
+        let strs = tokens
+            .iter()
+            .map(|x| x.token.str())
+            .collect::<Vec<&str>>()
+            .join(" ");
+        assert_eq!(
+            strs,
+            "true false define lambda cond else ( ) ? : -> <integer literal> <identifier>"
+        );
+        Ok(())
+    }
+}
