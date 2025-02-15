@@ -7,8 +7,9 @@ use miette::SourceSpan;
 use num_bigint::BigInt;
 
 use crate::errors::PanicLangError;
+use crate::errors::ParserErrorExpectedExpr;
 use crate::errors::ParserErrorExpectedToken;
-use crate::errors::ParserErrorUnexpectedToken;
+use crate::errors::ParserErrorNotAFunctionApplication;
 use crate::errors::Result;
 use crate::lexer::Token;
 use crate::lexer::TokenSpan;
@@ -48,6 +49,14 @@ pub enum Expr {
     Cond {
         cond_clauses: Vec<CondClause>,
         else_clause: Box<Expr>,
+    },
+
+    And {
+        exprs: Vec<Expr>,
+    },
+
+    Or {
+        exprs: Vec<Expr>,
     },
 
     Lambda {
@@ -158,9 +167,39 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
     next = expected_peek(tokens)?;
     let expr = match next.token {
         Token::RParen => Expr::EmptyList,
+        Token::And => {
+            let mut exprs = vec![];
+            consume_token(tokens, Token::And)?;
+            while expected_peek(tokens)?.token != Token::RParen {
+                exprs.push(parse_expr(input, tokens)?);
+            }
+            if exprs.is_empty() {
+                return Err(PanicLangError::ParserErrorExpectedExpr(
+                    ParserErrorExpectedExpr {
+                        at: expected_peek(tokens)?.span,
+                    },
+                ));
+            }
+            Expr::And { exprs }
+        }
+        Token::Or => {
+            let mut exprs = vec![];
+            consume_token(tokens, Token::Or)?;
+            while expected_peek(tokens)?.token != Token::RParen {
+                exprs.push(parse_expr(input, tokens)?);
+            }
+            if exprs.is_empty() {
+                return Err(PanicLangError::ParserErrorExpectedExpr(
+                    ParserErrorExpectedExpr {
+                        at: expected_peek(tokens)?.span,
+                    },
+                ));
+            }
+            Expr::Or { exprs }
+        }
         Token::Cond => {
             let mut cond_clauses = vec![];
-            _ = expected_next(tokens)?;
+            consume_token(tokens, Token::Cond)?;
             loop {
                 consume_lparen(tokens)?;
                 if matches!(expected_peek(tokens)?.token, Token::Else) {
@@ -171,7 +210,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                 consume_rparen(tokens)?;
                 cond_clauses.push(CondClause { test, action });
             }
-            _ = expected_next(tokens)?;
+            consume_token(tokens, Token::Else)?;
             let else_clause = Box::new(parse_expr(input, tokens)?);
             consume_rparen(tokens)?;
             Expr::Cond {
@@ -181,7 +220,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
         }
         Token::Lambda => {
             let mut formals = vec![];
-            _ = expected_next(tokens)?;
+            consume_token(tokens, Token::Lambda)?;
             consume_lparen(tokens)?;
             next = expected_next(tokens)?;
             while !matches!(next.token, Token::RParen) {
@@ -192,13 +231,13 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             Expr::Lambda { formals, body }
         }
         Token::Question => {
-            _ = expected_next(tokens)?;
+            consume_token(tokens, Token::Question)?;
             let expr = parse_expr(input, tokens)?;
             Expr::Question(Box::new(expr))
         }
         Token::RArrow => {
             let mut argument_types = vec![];
-            _ = expected_next(tokens)?;
+            consume_token(tokens, Token::RArrow)?;
             consume_lparen(tokens)?;
             while expected_peek(tokens)?.token != Token::RParen {
                 argument_types.push(parse_expr(input, tokens)?);
@@ -222,8 +261,8 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             }
         }
         Token::Colon | Token::Define | Token::Bool(_) | Token::Else | Token::IntLiteral => {
-            return Err(PanicLangError::ParserErrorUnexpectedToken(
-                ParserErrorUnexpectedToken { at: next.span },
+            return Err(PanicLangError::ParserErrorNotAFunctionApplication(
+                ParserErrorNotAFunctionApplication { at: next.span },
             ));
         }
     };
@@ -283,6 +322,16 @@ impl fmt::Display for Expr {
             }
             Expr::Identifier(iden) => {
                 write!(f, "{}", iden)
+            }
+            Expr::And { exprs } => {
+                write!(f, "(and ")?;
+                write_slice(f, exprs)?;
+                write!(f, ")")
+            }
+            Expr::Or { exprs } => {
+                write!(f, "(or ")?;
+                write_slice(f, exprs)?;
+                write!(f, ")")
             }
             Expr::Application {
                 function,
@@ -380,6 +429,8 @@ mod tests {
         test_roundtrip_expr("false")?;
         test_roundtrip_expr("(foo)")?;
         test_roundtrip_expr("(foo 1 2 3)")?;
+        test_roundtrip_expr("(and true true)")?;
+        test_roundtrip_expr("(or true false)")?;
         test_roundtrip_expr("(lambda (x) x)")?;
         test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;

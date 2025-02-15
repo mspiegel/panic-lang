@@ -22,7 +22,11 @@ pub enum PanicLangError {
 
     #[error(transparent)]
     #[diagnostic(transparent)]
-    ParserErrorUnexpectedToken(#[from] ParserErrorUnexpectedToken),
+    ParserErrorNotAFunctionApplication(#[from] ParserErrorNotAFunctionApplication),
+
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    ParserErrorExpectedExpr(#[from] ParserErrorExpectedExpr),
 
     #[error("unexpected end of file (EOF)")]
     #[diagnostic(code(panic_lang::unexpected_eof))]
@@ -36,22 +40,29 @@ pub enum PanicLangError {
 #[derive(Error, Diagnostic, Debug)]
 #[error("lexer error")]
 pub struct LexerError {
-    #[label("here")]
+    #[label("unrecognized token")]
     pub at: SourceSpan,
 }
 
 #[derive(Error, Diagnostic, Debug)]
-#[error("expected {expected:?}")]
+#[error("parser error")]
 pub struct ParserErrorExpectedToken {
-    #[label("here")]
+    #[label("expected {expected:?}")]
     pub at: SourceSpan,
     pub expected: &'static str,
 }
 
 #[derive(Error, Diagnostic, Debug)]
-#[error("unexpected token")]
-pub struct ParserErrorUnexpectedToken {
-    #[label("here")]
+#[error("parser error")]
+pub struct ParserErrorNotAFunctionApplication {
+    #[label("not a function application")]
+    pub at: SourceSpan,
+}
+
+#[derive(Error, Diagnostic, Debug)]
+#[error("parser error")]
+pub struct ParserErrorExpectedExpr {
+    #[label("expected expression")]
     pub at: SourceSpan,
 }
 
