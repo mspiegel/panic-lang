@@ -441,6 +441,27 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_expr_errors() -> Result<()> {
+        assert!(matches!(
+            parse_input_expr("(true true)"),
+            Err(PanicLangError::ParserErrorNotAFunctionApplication(_))
+        ));
+        assert!(matches!(
+            parse_input_expr("(foo 1 2"),
+            Err(PanicLangError::ParserErrorUnexpectedEOF)
+        ));
+        assert!(matches!(
+            parse_input_expr("(and)"),
+            Err(PanicLangError::ParserErrorExpectedExpr(_))
+        ));
+        assert!(matches!(
+            parse_input_expr("(cond)"),
+            Err(PanicLangError::ParserErrorExpectedToken(_))
+        ));
+        Ok(())
+    }
+
+    #[test]
     fn test_parse_program() -> Result<()> {
         test_roundtrip_program("(define (: foo i32) 0)")?;
         test_roundtrip_program("(define (: main (-> () ())) (lambda () ()))")?;
