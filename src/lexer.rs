@@ -32,6 +32,12 @@ pub enum Token {
     #[token("or")]
     Or,
 
+    #[token("when")]
+    When,
+
+    #[token("unless")]
+    Unless,
+
     #[token("(")]
     LParen,
 
@@ -102,6 +108,8 @@ impl Token {
             Token::Else => "else",
             Token::And => "and",
             Token::Or => "or",
+            Token::When => "when",
+            Token::Unless => "unless",
             Token::LParen => "(",
             Token::RParen => ")",
             Token::Question => "?",
@@ -122,7 +130,7 @@ mod tests {
     #[test]
     fn test_lexer() -> Result<()> {
         let tokens =
-            lex("true false define lambda cond else and or ( ) ? : -> 0 foo \"bar\" \'\\0\'")?;
+            lex("true false define lambda cond else when unless and or ( ) ? : -> 0 foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -130,7 +138,7 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda cond else and or ( ) ? : -> <integer literal> <identifier> <string literal> <character literal>"
+            "true false define lambda cond else when unless and or ( ) ? : -> <integer literal> <identifier> <string literal> <character literal>"
         );
         Ok(())
     }

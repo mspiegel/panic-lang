@@ -55,6 +55,16 @@ pub enum Expr {
         else_clause: Box<Expr>,
     },
 
+    When {
+        test: Box<Expr>,
+        action: Box<Expr>,
+    },
+
+    Unless {
+        test: Box<Expr>,
+        action: Box<Expr>,
+    },
+
     And {
         exprs: Vec<Expr>,
     },
@@ -229,6 +239,18 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             }
             Expr::Or { exprs }
         }
+        Token::When => {
+            consume_token(tokens, Token::When)?;
+            let test = Box::new(parse_expr(input, tokens)?);
+            let action = Box::new(parse_expr(input, tokens)?);
+            Expr::When { test, action }
+        }
+        Token::Unless => {
+            consume_token(tokens, Token::Unless)?;
+            let test = Box::new(parse_expr(input, tokens)?);
+            let action = Box::new(parse_expr(input, tokens)?);
+            Expr::Unless { test, action }
+        }
         Token::Cond => {
             let mut cond_clauses = vec![];
             consume_token(tokens, Token::Cond)?;
@@ -377,6 +399,12 @@ impl fmt::Display for Expr {
                 write_slice(f, exprs)?;
                 write!(f, ")")
             }
+            Expr::When { test, action } => {
+                write!(f, "(when {} {})", test, action)
+            }
+            Expr::Unless { test, action } => {
+                write!(f, "(unless {} {})", test, action)
+            }
             Expr::Application {
                 function,
                 arguments,
@@ -484,6 +512,8 @@ mod tests {
         test_roundtrip_expr("(foo 1 2 3)")?;
         test_roundtrip_expr("(and true true)")?;
         test_roundtrip_expr("(or true false)")?;
+        test_roundtrip_expr("(when true ())")?;
+        test_roundtrip_expr("(unless true ())")?;
         test_roundtrip_expr("(lambda (x) x)")?;
         test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;
