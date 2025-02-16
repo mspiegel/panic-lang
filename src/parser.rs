@@ -39,6 +39,8 @@ pub enum Expr {
 
     BoolLiteral(bool),
 
+    CharLiteral(char),
+
     StringLiteral(String),
 
     Identifier(String),
@@ -147,6 +149,27 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
         Token::Identifier => {
             let identifier = to_string(input, next.span);
             return Ok(Expr::Identifier(identifier));
+        }
+        Token::CharLiteral => {
+            let begin = next.span.offset();
+            let end = begin + next.span.len();
+            let literal = &input[(begin + 1)..(end - 1)];
+            match literal {
+                "\\n" => return Ok(Expr::CharLiteral('\n')),
+                "\\t" => return Ok(Expr::CharLiteral('\t')),
+                "\\r" => return Ok(Expr::CharLiteral('\r')),
+                "\\0" => return Ok(Expr::CharLiteral('\0')),
+                "\\'" => return Ok(Expr::CharLiteral('\'')),
+                "\\\"" => return Ok(Expr::CharLiteral('\"')),
+                "\\\\" => return Ok(Expr::CharLiteral('\\')),
+                _ => {}
+            };
+            if literal.chars().count() != 1 {
+                return Err(PanicLangError::LexerError(crate::errors::LexerError {
+                    at: next.span,
+                }));
+            }
+            return Ok(Expr::CharLiteral(literal.chars().nth(0).unwrap()));
         }
         Token::StrLiteral => {
             // TODO: parse escape characters
@@ -274,6 +297,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
         | Token::Bool(_)
         | Token::Else
         | Token::IntLiteral
+        | Token::CharLiteral
         | Token::StrLiteral => {
             return Err(PanicLangError::ParserErrorNotAFunctionApplication(
                 ParserErrorNotAFunctionApplication { at: next.span },
@@ -337,8 +361,11 @@ impl fmt::Display for Expr {
             Expr::Identifier(iden) => {
                 write!(f, "{}", iden)
             }
+            Expr::CharLiteral(lit) => {
+                write!(f, "{:?}", lit)
+            }
             Expr::StringLiteral(lit) => {
-                write!(f, "\"{}\"", lit)
+                write!(f, "{:?}", lit)
             }
             Expr::And { exprs } => {
                 write!(f, "(and ")?;
@@ -441,6 +468,14 @@ mod tests {
     fn test_parse_expr() -> Result<()> {
         test_roundtrip_expr("()")?;
         test_roundtrip_expr("0")?;
+        test_roundtrip_expr("'\\n'")?;
+        test_roundtrip_expr("'\\t'")?;
+        test_roundtrip_expr("'\\r'")?;
+        test_roundtrip_expr("'\\0'")?;
+        test_roundtrip_expr("'\\\\'")?;
+        test_roundtrip_expr("'\\\''")?;
+        test_roundtrip_expr("'\\\"")?;
+        test_roundtrip_expr("'0'")?;
         test_roundtrip_expr("\"foo\"")?;
         test_roundtrip_expr("i32")?;
         test_roundtrip_expr("true")?;

@@ -50,6 +50,9 @@ pub enum Token {
     #[regex(r"-?\d[_\d]*", priority = 2)]
     IntLiteral,
 
+    #[regex(r#"'(?:[^'\r\n\t\\]|\\r|\\n|\\t|\\\\|\\0|\\'|\\")'"#, priority = 2)]
+    CharLiteral,
+
     #[regex(r#""(?:[^"\\]|\\[\s\S])*""#, priority = 2)]
     StrLiteral,
 
@@ -106,6 +109,7 @@ impl Token {
             Token::RArrow => "->",
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
+            Token::CharLiteral => "<character literal>",
             Token::Identifier => "<identifier>",
         }
     }
@@ -117,7 +121,8 @@ mod tests {
 
     #[test]
     fn test_lexer() -> Result<()> {
-        let tokens = lex("true false define lambda cond else and or ( ) ? : -> 0 foo \"bar\"")?;
+        let tokens =
+            lex("true false define lambda cond else and or ( ) ? : -> 0 foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -125,7 +130,7 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda cond else and or ( ) ? : -> <integer literal> <identifier> <string literal>"
+            "true false define lambda cond else and or ( ) ? : -> <integer literal> <identifier> <string literal> <character literal>"
         );
         Ok(())
     }
