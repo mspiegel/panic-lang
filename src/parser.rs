@@ -169,7 +169,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                     at: next.span,
                 }));
             }
-            return Ok(Expr::CharLiteral(literal.chars().nth(0).unwrap()));
+            return Ok(Expr::CharLiteral(literal.chars().next().unwrap()));
         }
         Token::StrLiteral => {
             // TODO: parse escape characters
