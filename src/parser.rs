@@ -90,6 +90,8 @@ pub enum Expr {
         argument_types: Vec<Expr>,
         return_type: Box<Expr>,
     },
+
+    Slice(Box<Expr>),
 }
 
 #[derive(Debug)]
@@ -306,6 +308,11 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             let expr = parse_expr(input, tokens)?;
             Expr::Question(Box::new(expr))
         }
+        Token::Slice => {
+            consume_token(tokens, Token::Slice)?;
+            let expr = parse_expr(input, tokens)?;
+            Expr::Slice(Box::new(expr))
+        }
         Token::RArrow => {
             let mut argument_types = vec![];
             consume_token(tokens, Token::RArrow)?;
@@ -458,6 +465,9 @@ impl fmt::Display for Expr {
             Expr::Question(expr) => {
                 write!(f, "(? {})", expr)
             }
+            Expr::Slice(expr) => {
+                write!(f, "([] {})", expr)
+            }
             Expr::RArrow {
                 argument_types,
                 return_type,
@@ -543,6 +553,7 @@ mod tests {
         test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;
         test_roundtrip_expr("(-> (i32) i32)")?;
+        test_roundtrip_expr("([] i32)")?;
         test_roundtrip_expr("(cond (else ()))")?;
         test_roundtrip_expr("(cond ((< a 0) true) ((== a 0) false) (else ()))")?;
         Ok(())

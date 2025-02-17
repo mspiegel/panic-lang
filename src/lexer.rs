@@ -56,6 +56,9 @@ pub enum Token {
     #[token("->")]
     RArrow,
 
+    #[token("[]")]
+    Slice,
+
     #[regex(r"-?\d[_\d]*", priority = 2)]
     IntLiteral,
 
@@ -119,6 +122,7 @@ impl Token {
             Token::Question => "?",
             Token::Colon => ":",
             Token::RArrow => "->",
+            Token::Slice => "[]",
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
             Token::CharLiteral => "<character literal>",
@@ -134,7 +138,7 @@ mod tests {
     #[test]
     fn test_lexer() -> Result<()> {
         let tokens =
-            lex("true false define lambda cond else if when unless and or ( ) ? : -> 0 foo \"bar\" \'\\0\'")?;
+            lex("true false define lambda cond else if when unless and or ( ) ? [] : -> 0 foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -142,7 +146,7 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda cond else if when unless and or ( ) ? : -> <integer literal> <identifier> <string literal> <character literal>"
+            "true false define lambda cond else if when unless and or ( ) ? [] : -> <integer literal> <identifier> <string literal> <character literal>"
         );
         Ok(())
     }
