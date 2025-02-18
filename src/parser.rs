@@ -55,6 +55,16 @@ pub enum Expr {
         else_clause: Box<Expr>,
     },
 
+    Begin {
+        label: String,
+        exprs: Vec<Expr>,
+    },
+
+    LetStar {
+        bindings: Vec<BindingClause>,
+        body: Box<Expr>,
+    },
+
     When {
         test: Box<Expr>,
         action: Box<Expr>,
@@ -98,6 +108,12 @@ pub enum Expr {
 pub struct CondClause {
     pub test: Expr,
     pub action: Expr,
+}
+
+#[derive(Debug)]
+pub struct BindingClause {
+    pub identifier: TypedIden,
+    pub body: Expr,
 }
 
 fn expected_next(tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<TokenSpan> {
@@ -158,8 +174,15 @@ fn parse_typed_identifier(
     })
 }
 
+fn parse_string_literal(input: &str, span: &SourceSpan) -> Result<String> {
+    // TODO: parse escape characters
+    let begin = span.offset();
+    let end = begin + span.len();
+    Ok(input[(begin + 1)..(end - 1)].to_string())
+}
+
 fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Expr> {
-    let mut next = expected_next(tokens)?;
+    let next = expected_next(tokens)?;
     match next.token {
         Token::Bool(val) => {
             return Ok(Expr::BoolLiteral(val));
@@ -190,10 +213,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             return Ok(Expr::CharLiteral(literal.chars().next().unwrap()));
         }
         Token::StrLiteral => {
-            // TODO: parse escape characters
-            let begin = next.span.offset();
-            let end = begin + next.span.len();
-            let literal = input[(begin + 1)..(end - 1)].to_string();
+            let literal = parse_string_literal(input, &next.span)?;
             return Ok(Expr::StringLiteral(literal));
         }
         Token::IntLiteral => {
@@ -214,7 +234,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             ))
         }
     }
-    next = expected_peek(tokens)?;
+    let next = expected_peek(tokens)?;
     let expr = match next.token {
         Token::RParen => Expr::EmptyList,
         Token::And => {
@@ -270,6 +290,34 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             let action = Box::new(parse_expr(input, tokens)?);
             Expr::Unless { test, action }
         }
+        Token::Begin => {
+            consume_token(tokens, Token::Begin)?;
+            let next = expected_next(tokens)?;
+            if !matches!(next.token, Token::StrLiteral) {
+                return Err(expected_token(next.span, Token::StrLiteral));
+            }
+            let label = parse_string_literal(input, &next.span)?;
+            let mut exprs = vec![];
+            while expected_peek(tokens)?.token != Token::RParen {
+                exprs.push(parse_expr(input, tokens)?);
+            }
+            Expr::Begin { label, exprs }
+        }
+        Token::LetStar => {
+            let mut bindings = vec![];
+            consume_token(tokens, Token::LetStar)?;
+            consume_lparen(tokens)?;
+            while expected_peek(tokens)?.token != Token::RParen {
+                consume_lparen(tokens)?;
+                let identifier = parse_typed_identifier(input, tokens)?;
+                let body = parse_expr(input, tokens)?;
+                consume_rparen(tokens)?;
+                bindings.push(BindingClause { identifier, body });
+            }
+            consume_rparen(tokens)?;
+            let body = Box::new(parse_expr(input, tokens)?);
+            Expr::LetStar { bindings, body }
+        }
         Token::Cond => {
             let mut cond_clauses = vec![];
             consume_token(tokens, Token::Cond)?;
@@ -295,11 +343,14 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             let mut formals = vec![];
             consume_token(tokens, Token::Lambda)?;
             consume_lparen(tokens)?;
-            next = expected_next(tokens)?;
-            while !matches!(next.token, Token::RParen) {
+            while expected_peek(tokens)?.token != Token::RParen {
+                let next = expected_next(tokens)?;
+                if !matches!(next.token, Token::Identifier) {
+                    return Err(expected_token(next.span, Token::Identifier));
+                }
                 formals.push(to_string(input, next.span));
-                next = expected_next(tokens)?;
             }
+            consume_rparen(tokens)?;
             let body = Box::new(parse_expr(input, tokens)?);
             Expr::Lambda { formals, body }
         }
@@ -413,6 +464,14 @@ impl fmt::Display for Expr {
             Expr::StringLiteral(lit) => {
                 write!(f, "{:?}", lit)
             }
+            Expr::Begin { label, exprs } => {
+                write!(f, "(begin {:?}", label)?;
+                if !exprs.is_empty() {
+                    write!(f, " ")?;
+                    write_slice(f, exprs)?;
+                }
+                write!(f, ")")
+            }
             Expr::And { exprs } => {
                 write!(f, "(and ")?;
                 write_slice(f, exprs)?;
@@ -457,6 +516,11 @@ impl fmt::Display for Expr {
                 }
                 write!(f, "(else {}))", else_clause)
             }
+            Expr::LetStar { bindings, body } => {
+                write!(f, "(let* (")?;
+                write_slice(f, bindings)?;
+                write!(f, ") {})", body)
+            }
             Expr::Lambda { formals, body } => {
                 write!(f, "(lambda (")?;
                 write_slice(f, formals)?;
@@ -483,6 +547,12 @@ impl fmt::Display for Expr {
 impl fmt::Display for TypedIden {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(: {} {})", self.identifier, self.type_expr)
+    }
+}
+
+impl fmt::Display for BindingClause {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({} {})", self.identifier, self.body)
     }
 }
 
@@ -550,6 +620,10 @@ mod tests {
         test_roundtrip_expr("(when true ())")?;
         test_roundtrip_expr("(unless true ())")?;
         test_roundtrip_expr("(lambda (x) x)")?;
+        test_roundtrip_expr("(begin \"label\")")?;
+        test_roundtrip_expr("(begin \"label\" (foo 1) 2 3)")?;
+        test_roundtrip_expr("(let* () true)")?;
+        test_roundtrip_expr("(let* (((: a i32) 1) ((: b i32) 2)) (+ a b))")?;
         test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;
         test_roundtrip_expr("(-> (i32) i32)")?;
