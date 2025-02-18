@@ -78,7 +78,7 @@ pub enum Token {
     Identifier,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TokenSpan {
     pub token: Token,
     pub span: SourceSpan,
@@ -155,6 +155,27 @@ mod tests {
         assert_eq!(
             strs,
             "true false define lambda begin let* cond else if when unless and or ( ) ? [] : -> <integer literal> <identifier> <string literal> <character literal>"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_flexible_identifiers() -> Result<()> {
+        let tokens = lex("empty?")?;
+        assert_eq!(
+            vec![TokenSpan {
+                token: Token::Identifier,
+                span: SourceSpan::new(0.into(), 6),
+            }],
+            tokens
+        );
+        let tokens = lex("🤔")?;
+        assert_eq!(
+            vec![TokenSpan {
+                token: Token::Identifier,
+                span: SourceSpan::new(0.into(), 4),
+            }],
+            tokens
         );
         Ok(())
     }

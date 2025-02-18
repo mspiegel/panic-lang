@@ -348,7 +348,9 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                 if !matches!(next.token, Token::Identifier) {
                     return Err(expected_token(next.span, Token::Identifier));
                 }
-                formals.push(to_string(input, next.span));
+                // TODO: error on duplicate formal parameter
+                let formal = to_string(input, next.span);
+                formals.push(formal);
             }
             consume_rparen(tokens)?;
             let body = Box::new(parse_expr(input, tokens)?);
