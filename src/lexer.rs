@@ -75,7 +75,7 @@ pub enum Token {
     StrLiteral,
 
     #[regex(r"[^\s()]+", priority = 1)]
-    Identifier,
+    Name,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -134,7 +134,7 @@ impl Token {
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
             Token::CharLiteral => "<character literal>",
-            Token::Identifier => "<identifier>",
+            Token::Name => "<name>",
         }
     }
 }
@@ -154,17 +154,17 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda begin let* cond else if when unless and or ( ) ? [] : -> <integer literal> <identifier> <string literal> <character literal>"
+            "true false define lambda begin let* cond else if when unless and or ( ) ? [] : -> <integer literal> <name> <string literal> <character literal>"
         );
         Ok(())
     }
 
     #[test]
-    fn test_flexible_identifiers() -> Result<()> {
+    fn test_flexible_names() -> Result<()> {
         let tokens = lex("empty?")?;
         assert_eq!(
             vec![TokenSpan {
-                token: Token::Identifier,
+                token: Token::Name,
                 span: SourceSpan::new(0.into(), 6),
             }],
             tokens
@@ -172,7 +172,7 @@ mod tests {
         let tokens = lex("🤔")?;
         assert_eq!(
             vec![TokenSpan {
-                token: Token::Identifier,
+                token: Token::Name,
                 span: SourceSpan::new(0.into(), 4),
             }],
             tokens

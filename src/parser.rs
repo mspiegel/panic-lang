@@ -14,6 +14,10 @@ use crate::errors::Result;
 use crate::lexer::Token;
 use crate::lexer::TokenSpan;
 
+pub struct Identifier(String);
+
+pub struct Reference(String);
+
 #[derive(Debug)]
 pub struct Program {
     pub definitions: Vec<Definition>,
@@ -27,7 +31,7 @@ pub struct Definition {
 
 #[derive(Debug)]
 pub struct TypedIden {
-    pub identifier: String,
+    pub identifier: Identifier,
     pub type_expr: Expr,
 }
 
@@ -43,7 +47,7 @@ pub enum Expr {
 
     StringLiteral(String),
 
-    Identifier(String),
+    Reference(Reference),
 
     Application {
         function: Box<Expr>,
@@ -90,7 +94,7 @@ pub enum Expr {
     },
 
     Lambda {
-        formals: Vec<String>,
+        formals: Vec<Identifier>,
         body: Box<Expr>,
     },
 
@@ -162,10 +166,10 @@ fn parse_typed_identifier(
     consume_lparen(tokens)?;
     consume_token(tokens, Token::Colon)?;
     let next = expected_next(tokens)?;
-    if !matches!(next.token, Token::Identifier) {
-        return Err(expected_token(next.span, Token::Identifier));
+    if !matches!(next.token, Token::Name) {
+        return Err(expected_token(next.span, Token::Name));
     }
-    let identifier = to_string(input, next.span);
+    let identifier = Identifier(to_string(input, next.span));
     let type_expr = parse_expr(input, tokens)?;
     consume_rparen(tokens)?;
     Ok(TypedIden {
@@ -187,9 +191,9 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
         Token::Bool(val) => {
             return Ok(Expr::BoolLiteral(val));
         }
-        Token::Identifier => {
-            let identifier = to_string(input, next.span);
-            return Ok(Expr::Identifier(identifier));
+        Token::Name => {
+            let reference = Reference(to_string(input, next.span));
+            return Ok(Expr::Reference(reference));
         }
         Token::CharLiteral => {
             let begin = next.span.offset();
@@ -345,11 +349,11 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             consume_lparen(tokens)?;
             while expected_peek(tokens)?.token != Token::RParen {
                 let next = expected_next(tokens)?;
-                if !matches!(next.token, Token::Identifier) {
-                    return Err(expected_token(next.span, Token::Identifier));
+                if !matches!(next.token, Token::Name) {
+                    return Err(expected_token(next.span, Token::Name));
                 }
                 // TODO: error on duplicate formal parameter
-                let formal = to_string(input, next.span);
+                let formal = Identifier(to_string(input, next.span));
                 formals.push(formal);
             }
             consume_rparen(tokens)?;
@@ -380,7 +384,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                 return_type,
             }
         }
-        Token::Identifier | Token::LParen => {
+        Token::Name | Token::LParen => {
             let function = Box::new(parse_expr(input, tokens)?);
             let mut arguments = vec![];
             while expected_peek(tokens)?.token != Token::RParen {
@@ -457,8 +461,8 @@ impl fmt::Display for Expr {
             Expr::BoolLiteral(false) => {
                 write!(f, "false")
             }
-            Expr::Identifier(iden) => {
-                write!(f, "{}", iden)
+            Expr::Reference(reference) => {
+                write!(f, "{}", reference)
             }
             Expr::CharLiteral(lit) => {
                 write!(f, "{:?}", lit)
@@ -543,6 +547,30 @@ impl fmt::Display for Expr {
                 write!(f, ") {})", return_type)
             }
         }
+    }
+}
+
+impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl fmt::Display for Reference {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for Reference {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }
 
