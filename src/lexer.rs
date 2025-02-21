@@ -47,6 +47,9 @@ pub enum Token {
     #[token("unless")]
     Unless,
 
+    #[token("set!")]
+    SetBang,
+
     #[token("(")]
     LParen,
 
@@ -64,6 +67,9 @@ pub enum Token {
 
     #[token("[]")]
     Slice,
+
+    #[token(".")]
+    Dot,
 
     #[regex(r"-?\d[_\d]*", priority = 2)]
     IntLiteral,
@@ -125,12 +131,14 @@ impl Token {
             Token::If => "if",
             Token::When => "when",
             Token::Unless => "unless",
+            Token::SetBang => "set!",
             Token::LParen => "(",
             Token::RParen => ")",
             Token::Question => "?",
             Token::Colon => ":",
             Token::RArrow => "->",
             Token::Slice => "[]",
+            Token::Dot => ".",
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
             Token::CharLiteral => "<character literal>",
@@ -146,7 +154,7 @@ mod tests {
     #[test]
     fn test_lexer() -> Result<()> {
         let tokens =
-            lex("true false define lambda begin let* cond else if when unless and or ( ) ? [] : -> 0 foo \"bar\" \'\\0\'")?;
+            lex("true false define lambda begin let* set! cond else if when unless and or ( ) ? [] : -> . 0 foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -154,7 +162,7 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda begin let* cond else if when unless and or ( ) ? [] : -> <integer literal> <name> <string literal> <character literal>"
+            "true false define lambda begin let* set! cond else if when unless and or ( ) ? [] : -> . <integer literal> <name> <string literal> <character literal>"
         );
         Ok(())
     }

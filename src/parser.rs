@@ -69,6 +69,11 @@ pub enum Expr {
         body: Box<Expr>,
     },
 
+    SetBang {
+        lvalue: Box<Expr>,
+        rvalue: Box<Expr>,
+    },
+
     When {
         test: Box<Expr>,
         action: Box<Expr>,
@@ -106,6 +111,18 @@ pub enum Expr {
     },
 
     Slice(Box<Expr>),
+
+    SliceGet {
+        slice: Box<Expr>,
+        index: Box<Expr>,
+    },
+
+    // TODO: In the interpreter the label can be an expr
+    // In the compiler the label must be a string constant.
+    FieldAccess {
+        expr: Box<Expr>,
+        label: String,
+    },
 }
 
 #[derive(Debug)]
@@ -233,7 +250,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             return Err(PanicLangError::ParserErrorExpectedToken(
                 ParserErrorExpectedToken {
                     at: next.span,
-                    expected: "<literal>, <identifier>, or '('",
+                    expected: "<literal>, <name>, or '('",
                 },
             ))
         }
@@ -322,6 +339,12 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             let body = Box::new(parse_expr(input, tokens)?);
             Expr::LetStar { bindings, body }
         }
+        Token::SetBang => {
+            consume_token(tokens, Token::SetBang)?;
+            let lvalue = Box::new(parse_expr(input, tokens)?);
+            let rvalue = Box::new(parse_expr(input, tokens)?);
+            Expr::SetBang { lvalue, rvalue }
+        }
         Token::Cond => {
             let mut cond_clauses = vec![];
             consume_token(tokens, Token::Cond)?;
@@ -368,7 +391,24 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
         Token::Slice => {
             consume_token(tokens, Token::Slice)?;
             let expr = parse_expr(input, tokens)?;
-            Expr::Slice(Box::new(expr))
+            let peek = expected_peek(tokens)?;
+            if matches!(peek.token, Token::RParen) {
+                Expr::Slice(Box::new(expr))
+            } else {
+                let slice = Box::new(expr);
+                let index = Box::new(parse_expr(input, tokens)?);
+                Expr::SliceGet { slice, index }
+            }
+        }
+        Token::Dot => {
+            consume_token(tokens, Token::Dot)?;
+            let expr = Box::new(parse_expr(input, tokens)?);
+            let next = expected_next(tokens)?;
+            if !matches!(next.token, Token::StrLiteral) {
+                return Err(expected_token(next.span, Token::StrLiteral));
+            }
+            let label = parse_string_literal(input, &next.span)?;
+            Expr::FieldAccess { expr, label }
         }
         Token::RArrow => {
             let mut argument_types = vec![];
@@ -538,6 +578,15 @@ impl fmt::Display for Expr {
             Expr::Slice(expr) => {
                 write!(f, "([] {})", expr)
             }
+            Expr::SliceGet { slice, index } => {
+                write!(f, "([] {} {})", slice, index)
+            }
+            Expr::FieldAccess { expr, label } => {
+                write!(f, "(. {} {:?})", expr, label)
+            }
+            Expr::SetBang { lvalue, rvalue } => {
+                write!(f, "(set! {} {})", lvalue, rvalue)
+            }
             Expr::RArrow {
                 argument_types,
                 return_type,
@@ -642,8 +691,11 @@ mod tests {
         test_roundtrip_expr("i32")?;
         test_roundtrip_expr("true")?;
         test_roundtrip_expr("false")?;
+        test_roundtrip_expr("foo")?;
         test_roundtrip_expr("(foo)")?;
         test_roundtrip_expr("(foo 1 2 3)")?;
+        test_roundtrip_expr("(. foo \"x\")")?; // get field x of foo
+        test_roundtrip_expr("(set! (. foo \"x\") 0)")?; // set field x of foo
         test_roundtrip_expr("(and true true)")?;
         test_roundtrip_expr("(or true false)")?;
         test_roundtrip_expr("(if a b c)")?;
@@ -657,7 +709,9 @@ mod tests {
         test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;
         test_roundtrip_expr("(-> (i32) i32)")?;
-        test_roundtrip_expr("([] i32)")?;
+        test_roundtrip_expr("([] i32)")?; // slice of i32
+        test_roundtrip_expr("([] foo 0)")?; // get element 0 of foo
+        test_roundtrip_expr("(set! ([] foo 0) \"hello\")")?; // set element 0 of foo
         test_roundtrip_expr("(cond (else ()))")?;
         test_roundtrip_expr("(cond ((< a 0) true) ((== a 0) false) (else ()))")?;
         Ok(())
