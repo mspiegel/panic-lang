@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Undetermined,
     EmptyList,
@@ -6,26 +6,25 @@ pub enum Type {
     Integer,
     Character,
     LiteralString,
-    Marker { uuid: u64 },
+    Marker {
+        uuid: u64,
+    },
+    // Value
+    // Reference
+    // Resource
+    Newtype {
+        uuid: u64,
+        inner: Box<Type>,
+    },
     Ref(Box<Type>),
     Slice(Box<Type>),
+    Function {
+        arguments: Vec<Type>,
+        retval: Box<Type>,
+    },
+    Union {
+        default: Box<Type>,
+        variants: Vec<Type>,
+    },
     Meta,
-}
-
-impl PartialEq for Type {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Type::Undetermined, Type::Undetermined) => true,
-            (Type::EmptyList, Type::EmptyList) => true,
-            (Type::Boolean, Type::Boolean) => true,
-            (Type::Integer, Type::Integer) => true,
-            (Type::Character, Type::Character) => true,
-            (Type::LiteralString, Type::LiteralString) => true,
-            (Type::Marker { uuid: a }, Type::Marker { uuid: b }) => a == b,
-            (Type::Ref(a), Type::Ref(b)) => a == b,
-            (Type::Slice(a), Type::Slice(b)) => a == b,
-            (Type::Meta, Type::Meta) => true,
-            _ => false,
-        }
-    }
 }
