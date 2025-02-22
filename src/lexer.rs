@@ -90,6 +90,13 @@ pub struct TokenSpan {
     pub span: SourceSpan,
 }
 
+pub fn span(begin: SourceSpan, end: SourceSpan) -> SourceSpan {
+    let start = begin.offset();
+    let last = end.offset() + end.len();
+    let length = last - start;
+    SourceSpan::new(start.into(), length)
+}
+
 pub fn lex(input: &str) -> Result<Vec<TokenSpan>> {
     let mut tokens = vec![];
     let mut errors = vec![];

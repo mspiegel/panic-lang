@@ -11,8 +11,10 @@ use crate::errors::ParserErrorExpectedExpr;
 use crate::errors::ParserErrorExpectedToken;
 use crate::errors::ParserErrorNotAFunctionApplication;
 use crate::errors::Result;
+use crate::lexer::span;
 use crate::lexer::Token;
 use crate::lexer::TokenSpan;
+use crate::types::Type;
 
 pub struct Identifier(String);
 
@@ -34,9 +36,15 @@ pub struct TypedIden {
     pub identifier: Identifier,
     pub type_expr: Expr,
 }
+#[derive(Debug)]
+pub struct Expr {
+    pub contents: ExprContents,
+    pub at: SourceSpan,
+    pub typ: Type,
+}
 
 #[derive(Debug)]
-pub enum Expr {
+pub enum ExprContents {
     EmptyList,
 
     IntLiteral(BigInt),
@@ -203,48 +211,62 @@ fn parse_string_literal(input: &str, span: &SourceSpan) -> Result<String> {
 }
 
 fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Expr> {
+    let begin = expected_peek(tokens)?;
+    let begin = begin.span;
+    let (contents, end) = parse_expr_contents(input, tokens)?;
+    Ok(Expr {
+        contents,
+        at: span(begin, end),
+        typ: Type::Undetermined,
+    })
+}
+
+fn parse_expr_contents(
+    input: &str,
+    tokens: &mut Peekable<IntoIter<TokenSpan>>,
+) -> Result<(ExprContents, SourceSpan)> {
     let next = expected_next(tokens)?;
-    match next.token {
-        Token::Bool(val) => {
-            return Ok(Expr::BoolLiteral(val));
-        }
+    let contents = match next.token {
+        Token::Bool(val) => Some(ExprContents::BoolLiteral(val)),
         Token::Name => {
             let reference = Reference(to_string(input, next.span));
-            return Ok(Expr::Reference(reference));
+            Some(ExprContents::Reference(reference))
         }
         Token::CharLiteral => {
             let begin = next.span.offset();
             let end = begin + next.span.len();
             let literal = &input[(begin + 1)..(end - 1)];
             match literal {
-                "\\n" => return Ok(Expr::CharLiteral('\n')),
-                "\\t" => return Ok(Expr::CharLiteral('\t')),
-                "\\r" => return Ok(Expr::CharLiteral('\r')),
-                "\\0" => return Ok(Expr::CharLiteral('\0')),
-                "\\'" => return Ok(Expr::CharLiteral('\'')),
-                "\\\"" => return Ok(Expr::CharLiteral('\"')),
-                "\\\\" => return Ok(Expr::CharLiteral('\\')),
-                _ => {}
-            };
-            if literal.chars().count() != 1 {
-                return Err(PanicLangError::LexerError(crate::errors::LexerError {
-                    at: next.span,
-                }));
+                "\\n" => Some(ExprContents::CharLiteral('\n')),
+                "\\t" => Some(ExprContents::CharLiteral('\t')),
+                "\\r" => Some(ExprContents::CharLiteral('\r')),
+                "\\0" => Some(ExprContents::CharLiteral('\0')),
+                "\\'" => Some(ExprContents::CharLiteral('\'')),
+                "\\\"" => Some(ExprContents::CharLiteral('\"')),
+                "\\\\" => Some(ExprContents::CharLiteral('\\')),
+                _ => {
+                    if literal.chars().count() != 1 {
+                        return Err(PanicLangError::LexerError(crate::errors::LexerError {
+                            at: next.span,
+                        }));
+                    }
+                    Some(ExprContents::CharLiteral(literal.chars().next().unwrap()))
+                }
             }
-            return Ok(Expr::CharLiteral(literal.chars().next().unwrap()));
         }
         Token::StrLiteral => {
             let literal = parse_string_literal(input, &next.span)?;
-            return Ok(Expr::StringLiteral(literal));
+            Some(ExprContents::StringLiteral(literal))
         }
         Token::IntLiteral => {
             let text = to_str(input, next.span);
             // TODO: generate parser error for ParseBigIntError
             let num = BigInt::from_str(text).unwrap();
-            return Ok(Expr::IntLiteral(num));
+            Some(ExprContents::IntLiteral(num))
         }
         Token::LParen => {
             // consume the left parenthesis
+            None
         }
         _ => {
             return Err(PanicLangError::ParserErrorExpectedToken(
@@ -254,10 +276,13 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                 },
             ))
         }
+    };
+    if let Some(contents) = contents {
+        return Ok((contents, next.span));
     }
     let next = expected_peek(tokens)?;
-    let expr = match next.token {
-        Token::RParen => Expr::EmptyList,
+    let contents = match next.token {
+        Token::RParen => ExprContents::EmptyList,
         Token::And => {
             let mut exprs = vec![];
             consume_token(tokens, Token::And)?;
@@ -271,7 +296,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                     },
                 ));
             }
-            Expr::And { exprs }
+            ExprContents::And { exprs }
         }
         Token::Or => {
             let mut exprs = vec![];
@@ -286,14 +311,14 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                     },
                 ));
             }
-            Expr::Or { exprs }
+            ExprContents::Or { exprs }
         }
         Token::If => {
             consume_token(tokens, Token::If)?;
             let test_expr = Box::new(parse_expr(input, tokens)?);
             let then_expr = Box::new(parse_expr(input, tokens)?);
             let else_expr = Box::new(parse_expr(input, tokens)?);
-            Expr::If {
+            ExprContents::If {
                 test_expr,
                 then_expr,
                 else_expr,
@@ -303,13 +328,13 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             consume_token(tokens, Token::When)?;
             let test = Box::new(parse_expr(input, tokens)?);
             let action = Box::new(parse_expr(input, tokens)?);
-            Expr::When { test, action }
+            ExprContents::When { test, action }
         }
         Token::Unless => {
             consume_token(tokens, Token::Unless)?;
             let test = Box::new(parse_expr(input, tokens)?);
             let action = Box::new(parse_expr(input, tokens)?);
-            Expr::Unless { test, action }
+            ExprContents::Unless { test, action }
         }
         Token::Begin => {
             consume_token(tokens, Token::Begin)?;
@@ -322,7 +347,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             while expected_peek(tokens)?.token != Token::RParen {
                 exprs.push(parse_expr(input, tokens)?);
             }
-            Expr::Begin { label, exprs }
+            ExprContents::Begin { label, exprs }
         }
         Token::LetStar => {
             let mut bindings = vec![];
@@ -337,13 +362,13 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             }
             consume_rparen(tokens)?;
             let body = Box::new(parse_expr(input, tokens)?);
-            Expr::LetStar { bindings, body }
+            ExprContents::LetStar { bindings, body }
         }
         Token::SetBang => {
             consume_token(tokens, Token::SetBang)?;
             let lvalue = Box::new(parse_expr(input, tokens)?);
             let rvalue = Box::new(parse_expr(input, tokens)?);
-            Expr::SetBang { lvalue, rvalue }
+            ExprContents::SetBang { lvalue, rvalue }
         }
         Token::Cond => {
             let mut cond_clauses = vec![];
@@ -361,7 +386,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             consume_token(tokens, Token::Else)?;
             let else_clause = Box::new(parse_expr(input, tokens)?);
             consume_rparen(tokens)?;
-            Expr::Cond {
+            ExprContents::Cond {
                 cond_clauses,
                 else_clause,
             }
@@ -381,23 +406,23 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             }
             consume_rparen(tokens)?;
             let body = Box::new(parse_expr(input, tokens)?);
-            Expr::Lambda { formals, body }
+            ExprContents::Lambda { formals, body }
         }
         Token::Question => {
             consume_token(tokens, Token::Question)?;
             let expr = parse_expr(input, tokens)?;
-            Expr::Question(Box::new(expr))
+            ExprContents::Question(Box::new(expr))
         }
         Token::Slice => {
             consume_token(tokens, Token::Slice)?;
             let expr = parse_expr(input, tokens)?;
             let peek = expected_peek(tokens)?;
             if matches!(peek.token, Token::RParen) {
-                Expr::Slice(Box::new(expr))
+                ExprContents::Slice(Box::new(expr))
             } else {
                 let slice = Box::new(expr);
                 let index = Box::new(parse_expr(input, tokens)?);
-                Expr::SliceGet { slice, index }
+                ExprContents::SliceGet { slice, index }
             }
         }
         Token::Dot => {
@@ -408,7 +433,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
                 return Err(expected_token(next.span, Token::StrLiteral));
             }
             let label = parse_string_literal(input, &next.span)?;
-            Expr::FieldAccess { expr, label }
+            ExprContents::FieldAccess { expr, label }
         }
         Token::RArrow => {
             let mut argument_types = vec![];
@@ -419,7 +444,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             }
             consume_rparen(tokens)?;
             let return_type = Box::new(parse_expr(input, tokens)?);
-            Expr::RArrow {
+            ExprContents::RArrow {
                 argument_types,
                 return_type,
             }
@@ -430,7 +455,7 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             while expected_peek(tokens)?.token != Token::RParen {
                 arguments.push(parse_expr(input, tokens)?);
             }
-            Expr::Application {
+            ExprContents::Application {
                 function,
                 arguments,
             }
@@ -447,8 +472,11 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
             ));
         }
     };
-    consume_rparen(tokens)?;
-    Ok(expr)
+    let next = expected_next(tokens)?;
+    if !matches!(next.token, Token::RParen) {
+        return Err(expected_token(next.span, Token::RParen));
+    }
+    Ok((contents, next.span))
 }
 
 fn consume_token(tokens: &mut Peekable<IntoIter<TokenSpan>>, expected: Token) -> Result<()> {
@@ -488,29 +516,29 @@ fn write_slice<T: fmt::Display>(f: &mut fmt::Formatter, v: &[T]) -> fmt::Result 
 
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Expr::EmptyList => {
+        match &self.contents {
+            ExprContents::EmptyList => {
                 write!(f, "()")
             }
-            Expr::IntLiteral(i) => {
+            ExprContents::IntLiteral(i) => {
                 write!(f, "{}", i)
             }
-            Expr::BoolLiteral(true) => {
+            ExprContents::BoolLiteral(true) => {
                 write!(f, "true")
             }
-            Expr::BoolLiteral(false) => {
+            ExprContents::BoolLiteral(false) => {
                 write!(f, "false")
             }
-            Expr::Reference(reference) => {
+            ExprContents::Reference(reference) => {
                 write!(f, "{}", reference)
             }
-            Expr::CharLiteral(lit) => {
+            ExprContents::CharLiteral(lit) => {
                 write!(f, "{:?}", lit)
             }
-            Expr::StringLiteral(lit) => {
+            ExprContents::StringLiteral(lit) => {
                 write!(f, "{:?}", lit)
             }
-            Expr::Begin { label, exprs } => {
+            ExprContents::Begin { label, exprs } => {
                 write!(f, "(begin {:?}", label)?;
                 if !exprs.is_empty() {
                     write!(f, " ")?;
@@ -518,30 +546,30 @@ impl fmt::Display for Expr {
                 }
                 write!(f, ")")
             }
-            Expr::And { exprs } => {
+            ExprContents::And { exprs } => {
                 write!(f, "(and ")?;
                 write_slice(f, exprs)?;
                 write!(f, ")")
             }
-            Expr::Or { exprs } => {
+            ExprContents::Or { exprs } => {
                 write!(f, "(or ")?;
                 write_slice(f, exprs)?;
                 write!(f, ")")
             }
-            Expr::If {
+            ExprContents::If {
                 test_expr,
                 then_expr,
                 else_expr,
             } => {
                 write!(f, "(if {} {} {})", test_expr, then_expr, else_expr)
             }
-            Expr::When { test, action } => {
+            ExprContents::When { test, action } => {
                 write!(f, "(when {} {})", test, action)
             }
-            Expr::Unless { test, action } => {
+            ExprContents::Unless { test, action } => {
                 write!(f, "(unless {} {})", test, action)
             }
-            Expr::Application {
+            ExprContents::Application {
                 function,
                 arguments,
             } => {
@@ -552,7 +580,7 @@ impl fmt::Display for Expr {
                 }
                 write!(f, ")")
             }
-            Expr::Cond {
+            ExprContents::Cond {
                 cond_clauses,
                 else_clause,
             } => {
@@ -562,32 +590,32 @@ impl fmt::Display for Expr {
                 }
                 write!(f, "(else {}))", else_clause)
             }
-            Expr::LetStar { bindings, body } => {
+            ExprContents::LetStar { bindings, body } => {
                 write!(f, "(let* (")?;
                 write_slice(f, bindings)?;
                 write!(f, ") {})", body)
             }
-            Expr::Lambda { formals, body } => {
+            ExprContents::Lambda { formals, body } => {
                 write!(f, "(lambda (")?;
                 write_slice(f, formals)?;
                 write!(f, ") {})", body)
             }
-            Expr::Question(expr) => {
+            ExprContents::Question(expr) => {
                 write!(f, "(? {})", expr)
             }
-            Expr::Slice(expr) => {
+            ExprContents::Slice(expr) => {
                 write!(f, "([] {})", expr)
             }
-            Expr::SliceGet { slice, index } => {
+            ExprContents::SliceGet { slice, index } => {
                 write!(f, "([] {} {})", slice, index)
             }
-            Expr::FieldAccess { expr, label } => {
+            ExprContents::FieldAccess { expr, label } => {
                 write!(f, "(. {} {:?})", expr, label)
             }
-            Expr::SetBang { lvalue, rvalue } => {
+            ExprContents::SetBang { lvalue, rvalue } => {
                 write!(f, "(set! {} {})", lvalue, rvalue)
             }
-            Expr::RArrow {
+            ExprContents::RArrow {
                 argument_types,
                 return_type,
             } => {
