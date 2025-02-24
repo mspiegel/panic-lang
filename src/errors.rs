@@ -22,6 +22,10 @@ pub enum PanicLangError {
 
     #[error(transparent)]
     #[diagnostic(transparent)]
+    ParserErrorNotATypeExpression(#[from] ParserErrorNotATypeExpression),
+
+    #[error(transparent)]
+    #[diagnostic(transparent)]
     ParserErrorNotAFunctionApplication(#[from] ParserErrorNotAFunctionApplication),
 
     #[error(transparent)]
@@ -31,6 +35,14 @@ pub enum PanicLangError {
     #[error("unexpected end of file (EOF)")]
     #[diagnostic(code(panic_lang::unexpected_eof))]
     ParserErrorUnexpectedEOF,
+
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    CompilerErrorNoDefinition(#[from] CompilerErrorNoDefinition),
+
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    CompilerErrorDuplicateDefinition(#[from] CompilerErrorDuplicateDefinition),
 
     #[error(transparent)]
     #[diagnostic(transparent)]
@@ -54,6 +66,13 @@ pub struct ParserErrorExpectedToken {
 
 #[derive(Error, Diagnostic, Debug)]
 #[error("parser error")]
+pub struct ParserErrorNotATypeExpression {
+    #[label("not a type expression")]
+    pub at: SourceSpan,
+}
+
+#[derive(Error, Diagnostic, Debug)]
+#[error("parser error")]
 pub struct ParserErrorNotAFunctionApplication {
     #[label("not a function application")]
     pub at: SourceSpan,
@@ -63,6 +82,20 @@ pub struct ParserErrorNotAFunctionApplication {
 #[error("parser error")]
 pub struct ParserErrorExpectedExpr {
     #[label("expected expression")]
+    pub at: SourceSpan,
+}
+
+#[derive(Error, Diagnostic, Debug)]
+#[error("compiler error")]
+pub struct CompilerErrorNoDefinition {
+    #[label("no definition")]
+    pub at: SourceSpan,
+}
+
+#[derive(Error, Diagnostic, Debug)]
+#[error("compiler error")]
+pub struct CompilerErrorDuplicateDefinition {
+    #[label("duplicate definition")]
     pub at: SourceSpan,
 }
 

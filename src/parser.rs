@@ -16,9 +16,8 @@ use crate::lexer::Token;
 use crate::lexer::TokenSpan;
 use crate::types::Type;
 
-pub struct Identifier(String);
-
-pub struct Reference(String);
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct Identifier(pub String);
 
 #[derive(Debug)]
 pub struct Program {
@@ -29,18 +28,20 @@ pub struct Program {
 pub struct Definition {
     pub identifier: TypedIden,
     pub body: Expr,
+    pub at: SourceSpan,
 }
 
 #[derive(Debug)]
 pub struct TypedIden {
     pub identifier: Identifier,
     pub type_expr: Expr,
+    pub at: SourceSpan,
 }
 #[derive(Debug)]
 pub struct Expr {
     pub contents: ExprContents,
-    pub at: SourceSpan,
     pub typ: Type,
+    pub at: SourceSpan,
 }
 
 #[derive(Debug)]
@@ -55,7 +56,7 @@ pub enum ExprContents {
 
     StringLiteral(String),
 
-    Reference(Reference),
+    Reference(Identifier),
 
     Application {
         function: Box<Expr>,
@@ -176,18 +177,26 @@ fn to_string(input: &str, at: SourceSpan) -> String {
 }
 
 fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Definition> {
+    let begin = expected_peek(tokens)?.span;
     consume_lparen(tokens)?;
     consume_token(tokens, Token::Define)?;
     let identifier = parse_typed_identifier(input, tokens)?;
     let body = parse_expr(input, tokens)?;
+    let end = expected_peek(tokens)?.span;
+    let at = span(begin, end);
     consume_rparen(tokens)?;
-    Ok(Definition { identifier, body })
+    Ok(Definition {
+        identifier,
+        body,
+        at,
+    })
 }
 
 fn parse_typed_identifier(
     input: &str,
     tokens: &mut Peekable<IntoIter<TokenSpan>>,
 ) -> Result<TypedIden> {
+    let begin = expected_peek(tokens)?.span;
     consume_lparen(tokens)?;
     consume_token(tokens, Token::Colon)?;
     let next = expected_next(tokens)?;
@@ -196,10 +205,13 @@ fn parse_typed_identifier(
     }
     let identifier = Identifier(to_string(input, next.span));
     let type_expr = parse_expr(input, tokens)?;
+    let end = expected_peek(tokens)?.span;
+    let at = span(begin, end);
     consume_rparen(tokens)?;
     Ok(TypedIden {
         identifier,
         type_expr,
+        at,
     })
 }
 
@@ -229,8 +241,8 @@ fn parse_expr_contents(
     let contents = match next.token {
         Token::Bool(val) => Some(ExprContents::BoolLiteral(val)),
         Token::Name => {
-            let reference = Reference(to_string(input, next.span));
-            Some(ExprContents::Reference(reference))
+            let identifier = Identifier(to_string(input, next.span));
+            Some(ExprContents::Reference(identifier))
         }
         Token::CharLiteral => {
             let begin = next.span.offset();
@@ -634,18 +646,6 @@ impl fmt::Display for Identifier {
 }
 
 impl fmt::Debug for Identifier {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.0)
-    }
-}
-
-impl fmt::Display for Reference {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl fmt::Debug for Reference {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.0)
     }
