@@ -50,9 +50,7 @@ pub fn build_type_from_type_expr(
     definitions: &mut HashMap<Identifier, Type>,
 ) -> Result<Type, PanicLangError> {
     match &type_expr.contents {
-        ExprContents::EmptyList => {
-            return Ok(Type::EmptyList);
-        }
+        ExprContents::EmptyList => Ok(Type::EmptyList),
         ExprContents::Reference(identifier) => {
             let primitive = match identifier.0.as_str() {
                 "i32" => Some(Type::Integer),
@@ -69,8 +67,7 @@ pub fn build_type_from_type_expr(
             let definition = program
                 .definitions
                 .iter()
-                .filter(|def| def.identifier.identifier == *identifier)
-                .next();
+                .find(|def| def.identifier.identifier == *identifier);
             match definition {
                 Some(definition) => {
                     let typ = build_type_from_type_expr(
@@ -79,18 +76,16 @@ pub fn build_type_from_type_expr(
                         definitions,
                     )?;
                     definitions.insert(identifier.clone(), typ.clone());
-                    return Ok(typ);
+                    Ok(typ)
                 }
-                None => {
-                    return Err(PanicLangError::CompilerErrorNoDefinition(
-                        CompilerErrorNoDefinition { at: type_expr.at },
-                    ))
-                }
+                None => Err(PanicLangError::CompilerErrorNoDefinition(
+                    CompilerErrorNoDefinition { at: type_expr.at },
+                )),
             }
         }
         ExprContents::Slice(expr) => {
             let typ = Box::new(build_type_from_type_expr(expr, program, definitions)?);
-            return Ok(Type::Slice(typ));
+            Ok(Type::Slice(typ))
         }
         ExprContents::RArrow {
             argument_types,
