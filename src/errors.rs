@@ -22,10 +22,6 @@ pub enum PanicLangError {
 
     #[error(transparent)]
     #[diagnostic(transparent)]
-    ParserErrorNotATypeExpression(#[from] ParserErrorNotATypeExpression),
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
     ParserErrorNotAFunctionApplication(#[from] ParserErrorNotAFunctionApplication),
 
     #[error(transparent)]
@@ -62,13 +58,6 @@ pub struct ParserErrorExpectedToken {
     #[label("expected {expected:?}")]
     pub at: SourceSpan,
     pub expected: &'static str,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("parser error")]
-pub struct ParserErrorNotATypeExpression {
-    #[label("not a type expression")]
-    pub at: SourceSpan,
 }
 
 #[derive(Error, Diagnostic, Debug)]
