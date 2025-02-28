@@ -14,7 +14,6 @@ use crate::errors::Result;
 use crate::lexer::span;
 use crate::lexer::Token;
 use crate::lexer::TokenSpan;
-use crate::types::Type;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Identifier(pub String);
@@ -26,21 +25,14 @@ pub struct Program {
 
 #[derive(Debug)]
 pub struct Definition {
-    pub identifier: TypedIden,
+    pub identifier: Identifier,
     pub body: Expr,
     pub at: SourceSpan,
 }
 
 #[derive(Debug)]
-pub struct TypedIden {
-    pub identifier: Identifier,
-    pub type_expr: Expr,
-    pub at: SourceSpan,
-}
-#[derive(Debug)]
 pub struct Expr {
     pub contents: ExprContents,
-    pub typ: Type,
     pub at: SourceSpan,
 }
 
@@ -142,7 +134,7 @@ pub struct CondClause {
 
 #[derive(Debug)]
 pub struct BindingClause {
-    pub identifier: TypedIden,
+    pub identifier: Identifier,
     pub body: Expr,
 }
 
@@ -176,11 +168,26 @@ fn to_string(input: &str, at: SourceSpan) -> String {
     to_str(input, at).to_string()
 }
 
+fn parse_string_literal(input: &str, span: &SourceSpan) -> Result<String> {
+    // TODO: parse escape characters
+    let begin = span.offset();
+    let end = begin + span.len();
+    Ok(input[(begin + 1)..(end - 1)].to_string())
+}
+
+fn parse_identifier(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Identifier> {
+    let next = expected_next(tokens)?;
+    if !matches!(next.token, Token::Name) {
+        return Err(expected_token(next.span, Token::Name));
+    }
+    Ok(Identifier(to_string(input, next.span)))
+}
+
 fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Definition> {
     let begin = expected_peek(tokens)?.span;
     consume_lparen(tokens)?;
     consume_token(tokens, Token::Define)?;
-    let identifier = parse_typed_identifier(input, tokens)?;
+    let identifier = parse_identifier(input, tokens)?;
     let body = parse_expr(input, tokens)?;
     let end = expected_peek(tokens)?.span;
     let at = span(begin, end);
@@ -192,36 +199,6 @@ fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> 
     })
 }
 
-fn parse_typed_identifier(
-    input: &str,
-    tokens: &mut Peekable<IntoIter<TokenSpan>>,
-) -> Result<TypedIden> {
-    let begin = expected_peek(tokens)?.span;
-    consume_lparen(tokens)?;
-    consume_token(tokens, Token::Colon)?;
-    let next = expected_next(tokens)?;
-    if !matches!(next.token, Token::Name) {
-        return Err(expected_token(next.span, Token::Name));
-    }
-    let identifier = Identifier(to_string(input, next.span));
-    let type_expr = parse_expr(input, tokens)?;
-    let end = expected_peek(tokens)?.span;
-    let at = span(begin, end);
-    consume_rparen(tokens)?;
-    Ok(TypedIden {
-        identifier,
-        type_expr,
-        at,
-    })
-}
-
-fn parse_string_literal(input: &str, span: &SourceSpan) -> Result<String> {
-    // TODO: parse escape characters
-    let begin = span.offset();
-    let end = begin + span.len();
-    Ok(input[(begin + 1)..(end - 1)].to_string())
-}
-
 fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Expr> {
     let begin = expected_peek(tokens)?;
     let begin = begin.span;
@@ -229,7 +206,6 @@ fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result
     Ok(Expr {
         contents,
         at: span(begin, end),
-        typ: Type::Undetermined,
     })
 }
 
@@ -367,7 +343,7 @@ fn parse_expr_contents(
             consume_lparen(tokens)?;
             while expected_peek(tokens)?.token != Token::RParen {
                 consume_lparen(tokens)?;
-                let identifier = parse_typed_identifier(input, tokens)?;
+                let identifier = parse_identifier(input, tokens)?;
                 let body = parse_expr(input, tokens)?;
                 consume_rparen(tokens)?;
                 bindings.push(BindingClause { identifier, body });
@@ -408,58 +384,13 @@ fn parse_expr_contents(
             consume_token(tokens, Token::Lambda)?;
             consume_lparen(tokens)?;
             while expected_peek(tokens)?.token != Token::RParen {
-                let next = expected_next(tokens)?;
-                if !matches!(next.token, Token::Name) {
-                    return Err(expected_token(next.span, Token::Name));
-                }
                 // TODO: error on duplicate formal parameter
-                let formal = Identifier(to_string(input, next.span));
+                let formal = parse_identifier(input, tokens)?;
                 formals.push(formal);
             }
             consume_rparen(tokens)?;
             let body = Box::new(parse_expr(input, tokens)?);
             ExprContents::Lambda { formals, body }
-        }
-        Token::Question => {
-            consume_token(tokens, Token::Question)?;
-            let expr = parse_expr(input, tokens)?;
-            ExprContents::Question(Box::new(expr))
-        }
-        Token::Slice => {
-            consume_token(tokens, Token::Slice)?;
-            let expr = parse_expr(input, tokens)?;
-            let peek = expected_peek(tokens)?;
-            if matches!(peek.token, Token::RParen) {
-                ExprContents::Slice(Box::new(expr))
-            } else {
-                let slice = Box::new(expr);
-                let index = Box::new(parse_expr(input, tokens)?);
-                ExprContents::SliceGet { slice, index }
-            }
-        }
-        Token::Dot => {
-            consume_token(tokens, Token::Dot)?;
-            let expr = Box::new(parse_expr(input, tokens)?);
-            let next = expected_next(tokens)?;
-            if !matches!(next.token, Token::StrLiteral) {
-                return Err(expected_token(next.span, Token::StrLiteral));
-            }
-            let label = parse_string_literal(input, &next.span)?;
-            ExprContents::FieldAccess { expr, label }
-        }
-        Token::RArrow => {
-            let mut argument_types = vec![];
-            consume_token(tokens, Token::RArrow)?;
-            consume_lparen(tokens)?;
-            while expected_peek(tokens)?.token != Token::RParen {
-                argument_types.push(parse_expr(input, tokens)?);
-            }
-            consume_rparen(tokens)?;
-            let return_type = Box::new(parse_expr(input, tokens)?);
-            ExprContents::RArrow {
-                argument_types,
-                return_type,
-            }
         }
         Token::Name | Token::LParen => {
             let function = Box::new(parse_expr(input, tokens)?);
@@ -472,8 +403,7 @@ fn parse_expr_contents(
                 arguments,
             }
         }
-        Token::Colon
-        | Token::Define
+        Token::Define
         | Token::Bool(_)
         | Token::Else
         | Token::IntLiteral
@@ -651,12 +581,6 @@ impl fmt::Debug for Identifier {
     }
 }
 
-impl fmt::Display for TypedIden {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(: {} {})", self.identifier, self.type_expr)
-    }
-}
-
 impl fmt::Display for BindingClause {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({} {})", self.identifier, self.body)
@@ -733,7 +657,7 @@ mod tests {
         test_roundtrip_expr("(begin \"label\")")?;
         test_roundtrip_expr("(begin \"label\" (foo 1) 2 3)")?;
         test_roundtrip_expr("(let* () true)")?;
-        test_roundtrip_expr("(let* (((: a i32) 1) ((: b i32) 2)) (+ a b))")?;
+        test_roundtrip_expr("(let* ((a 1) (b 2)) (+ a b))")?;
         test_roundtrip_expr("(? (/ 1 0))")?;
         test_roundtrip_expr("(-> () ())")?;
         test_roundtrip_expr("(-> (i32) i32)")?;
@@ -768,8 +692,8 @@ mod tests {
 
     #[test]
     fn test_parse_program() -> Result<()> {
-        test_roundtrip_program("(define (: foo i32) 0)")?;
-        test_roundtrip_program("(define (: main (-> () ())) (lambda () ()))")?;
+        test_roundtrip_program("(define foo 0)")?;
+        test_roundtrip_program("(define main (lambda () ()))")?;
         Ok(())
     }
 }

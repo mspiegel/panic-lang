@@ -56,21 +56,6 @@ pub enum Token {
     #[token(")")]
     RParen,
 
-    #[token("?", priority = 2)]
-    Question,
-
-    #[token(":")]
-    Colon,
-
-    #[token("->")]
-    RArrow,
-
-    #[token("[]")]
-    Slice,
-
-    #[token(".")]
-    Dot,
-
     #[regex(r"-?\d[_\d]*", priority = 2)]
     IntLiteral,
 
@@ -141,11 +126,6 @@ impl Token {
             Token::SetBang => "set!",
             Token::LParen => "(",
             Token::RParen => ")",
-            Token::Question => "?",
-            Token::Colon => ":",
-            Token::RArrow => "->",
-            Token::Slice => "[]",
-            Token::Dot => ".",
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
             Token::CharLiteral => "<character literal>",
@@ -161,7 +141,7 @@ mod tests {
     #[test]
     fn test_lexer() -> Result<()> {
         let tokens =
-            lex("true false define lambda begin let* set! cond else if when unless and or ( ) ? [] : -> . 0 foo \"bar\" \'\\0\'")?;
+            lex("true false define lambda begin let* set! cond else if when unless and or ( ) 0 foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -169,7 +149,7 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda begin let* set! cond else if when unless and or ( ) ? [] : -> . <integer literal> <name> <string literal> <character literal>"
+            "true false define lambda begin let* set! cond else if when unless and or ( ) <integer literal> <name> <string literal> <character literal>"
         );
         Ok(())
     }
@@ -189,6 +169,22 @@ mod tests {
             vec![TokenSpan {
                 token: Token::Name,
                 span: SourceSpan::new(0.into(), 4),
+            }],
+            tokens
+        );
+        let tokens = lex("[]")?;
+        assert_eq!(
+            vec![TokenSpan {
+                token: Token::Name,
+                span: SourceSpan::new(0.into(), 2),
+            }],
+            tokens
+        );
+        let tokens = lex(".")?;
+        assert_eq!(
+            vec![TokenSpan {
+                token: Token::Name,
+                span: SourceSpan::new(0.into(), 1),
             }],
             tokens
         );
