@@ -61,7 +61,6 @@ pub enum ExprContents {
     },
 
     Begin {
-        label: String,
         exprs: Vec<Expr>,
     },
 
@@ -326,16 +325,11 @@ fn parse_expr_contents(
         }
         Token::Begin => {
             consume_token(tokens, Token::Begin)?;
-            let next = expected_next(tokens)?;
-            if !matches!(next.token, Token::StrLiteral) {
-                return Err(expected_token(next.span, Token::StrLiteral));
-            }
-            let label = parse_string_literal(input, &next.span)?;
             let mut exprs = vec![];
             while expected_peek(tokens)?.token != Token::RParen {
                 exprs.push(parse_expr(input, tokens)?);
             }
-            ExprContents::Begin { label, exprs }
+            ExprContents::Begin { exprs }
         }
         Token::LetStar => {
             let mut bindings = vec![];
@@ -480,8 +474,8 @@ impl fmt::Display for Expr {
             ExprContents::StringLiteral(lit) => {
                 write!(f, "{:?}", lit)
             }
-            ExprContents::Begin { label, exprs } => {
-                write!(f, "(begin {:?}", label)?;
+            ExprContents::Begin { exprs } => {
+                write!(f, "(begin")?;
                 if !exprs.is_empty() {
                     write!(f, " ")?;
                     write_slice(f, exprs)?;
@@ -654,8 +648,8 @@ mod tests {
         test_roundtrip_expr("(when true ())")?;
         test_roundtrip_expr("(unless true ())")?;
         test_roundtrip_expr("(lambda (x) x)")?;
-        test_roundtrip_expr("(begin \"label\")")?;
-        test_roundtrip_expr("(begin \"label\" (foo 1) 2 3)")?;
+        test_roundtrip_expr("(begin)")?;
+        test_roundtrip_expr("(begin (foo 1) 2 3)")?;
         test_roundtrip_expr("(let* () true)")?;
         test_roundtrip_expr("(let* ((a 1) (b 2)) (+ a b))")?;
         test_roundtrip_expr("(? (/ 1 0))")?;
