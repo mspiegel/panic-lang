@@ -102,27 +102,6 @@ pub enum ExprContents {
         formals: Vec<Identifier>,
         body: Box<Expr>,
     },
-
-    Question(Box<Expr>),
-
-    RArrow {
-        argument_types: Vec<Expr>,
-        return_type: Box<Expr>,
-    },
-
-    Slice(Box<Expr>),
-
-    SliceGet {
-        slice: Box<Expr>,
-        index: Box<Expr>,
-    },
-
-    // TODO: In the interpreter the label can be an expr
-    // In the compiler the label must be a string constant.
-    FieldAccess {
-        expr: Box<Expr>,
-        label: String,
-    },
 }
 
 #[derive(Debug)]
@@ -536,28 +515,8 @@ impl fmt::Display for Expr {
                 write_slice(f, formals)?;
                 write!(f, ") {})", body)
             }
-            ExprContents::Question(expr) => {
-                write!(f, "(? {})", expr)
-            }
-            ExprContents::Slice(expr) => {
-                write!(f, "([] {})", expr)
-            }
-            ExprContents::SliceGet { slice, index } => {
-                write!(f, "([] {} {})", slice, index)
-            }
-            ExprContents::FieldAccess { expr, label } => {
-                write!(f, "(. {} {:?})", expr, label)
-            }
             ExprContents::SetBang { lvalue, rvalue } => {
                 write!(f, "(set! {} {})", lvalue, rvalue)
-            }
-            ExprContents::RArrow {
-                argument_types,
-                return_type,
-            } => {
-                write!(f, "(-> (")?;
-                write_slice(f, argument_types)?;
-                write!(f, ") {})", return_type)
             }
         }
     }
