@@ -20,9 +20,9 @@ impl TopLevel {
     pub fn get(&self, key: &Identifier) -> Option<Value> {
         let candidate = self.values.get(key);
         if candidate.is_some() {
-            return candidate.cloned();
+            candidate.cloned()
         } else {
-            return None;
+            None
         }
     }
 }
@@ -95,7 +95,7 @@ pub fn eval(expr: &Expr, locals: &mut LocalScope, globals: &mut TopLevel) -> Res
         }
         _ => todo!(),
     }
-    return Ok(Value::EmptyList);
+    Ok(Value::EmptyList)
 }
 
 #[cfg(test)]
