@@ -177,7 +177,7 @@ fn parse_definition(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> 
     })
 }
 
-fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Expr> {
+pub fn parse_expr(input: &str, tokens: &mut Peekable<IntoIter<TokenSpan>>) -> Result<Expr> {
     let begin = expected_peek(tokens)?;
     let begin = begin.span;
     let (contents, end) = parse_expr_contents(input, tokens)?;

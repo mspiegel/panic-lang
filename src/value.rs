@@ -1,6 +1,6 @@
 use num_bigint::BigInt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     EmptyList,
     Integer(BigInt),

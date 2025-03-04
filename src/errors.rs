@@ -28,6 +28,10 @@ pub enum PanicLangError {
     #[diagnostic(transparent)]
     ParserErrorExpectedExpr(#[from] ParserErrorExpectedExpr),
 
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    InvalidSetBangLeftHandSide(#[from] InvalidSetBangLeftHandSide),
+
     #[error("unexpected end of file (EOF)")]
     #[diagnostic(code(panic_lang::unexpected_eof))]
     ParserErrorUnexpectedEOF,
@@ -85,6 +89,13 @@ pub struct CompilerErrorNoDefinition {
 #[error("compiler error")]
 pub struct CompilerErrorDuplicateDefinition {
     #[label("duplicate definition")]
+    pub at: SourceSpan,
+}
+
+#[derive(Error, Diagnostic, Debug)]
+#[error("type error")]
+pub struct InvalidSetBangLeftHandSide {
+    #[label("invalid set! left-hand side")]
     pub at: SourceSpan,
 }
 
