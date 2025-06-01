@@ -4,13 +4,12 @@ use miette::IntoDiagnostic;
 use miette::Report;
 
 use panic_lang::lexer::lex;
-use panic_lang::parser::parse;
 
 fn main_helper(input: &str) -> panic_lang::errors::Result<()> {
     let tokens = lex(input)?;
     println!("{:?}", tokens.iter().map(|x| &x.token).collect::<Vec<_>>());
-    let program = parse(input, tokens)?;
-    println!("{:?}", program);
+    //    let program = parse(input, tokens)?;
+    //    println!("{:?}", program);
     Ok(())
 }
 

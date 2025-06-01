@@ -18,34 +18,6 @@ pub enum PanicLangError {
 
     #[error(transparent)]
     #[diagnostic(transparent)]
-    ParserErrorExpectedToken(#[from] ParserErrorExpectedToken),
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    ParserErrorNotAFunctionApplication(#[from] ParserErrorNotAFunctionApplication),
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    ParserErrorExpectedExpr(#[from] ParserErrorExpectedExpr),
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    InvalidSetBangLeftHandSide(#[from] InvalidSetBangLeftHandSide),
-
-    #[error("unexpected end of file (EOF)")]
-    #[diagnostic(code(panic_lang::unexpected_eof))]
-    ParserErrorUnexpectedEOF,
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    CompilerErrorNoDefinition(#[from] CompilerErrorNoDefinition),
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    CompilerErrorDuplicateDefinition(#[from] CompilerErrorDuplicateDefinition),
-
-    #[error(transparent)]
-    #[diagnostic(transparent)]
     SeveralErrors(#[from] SeveralErrors),
 }
 
@@ -53,49 +25,6 @@ pub enum PanicLangError {
 #[error("lexer error")]
 pub struct LexerError {
     #[label("unrecognized token")]
-    pub at: SourceSpan,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("parser error")]
-pub struct ParserErrorExpectedToken {
-    #[label("expected {expected:?}")]
-    pub at: SourceSpan,
-    pub expected: &'static str,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("parser error")]
-pub struct ParserErrorNotAFunctionApplication {
-    #[label("not a function application")]
-    pub at: SourceSpan,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("parser error")]
-pub struct ParserErrorExpectedExpr {
-    #[label("expected expression")]
-    pub at: SourceSpan,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("compiler error")]
-pub struct CompilerErrorNoDefinition {
-    #[label("no definition")]
-    pub at: SourceSpan,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("compiler error")]
-pub struct CompilerErrorDuplicateDefinition {
-    #[label("duplicate definition")]
-    pub at: SourceSpan,
-}
-
-#[derive(Error, Diagnostic, Debug)]
-#[error("type error")]
-pub struct InvalidSetBangLeftHandSide {
-    #[label("invalid set! left-hand side")]
     pub at: SourceSpan,
 }
 

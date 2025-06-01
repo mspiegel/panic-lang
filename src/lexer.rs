@@ -17,44 +17,71 @@ pub enum Token {
     #[token("define")]
     Define,
 
-    #[token("lambda")]
-    Lambda,
+    #[token("fn")]
+    Fn,
 
-    #[token("let*")]
-    LetStar,
-
-    #[token("begin")]
-    Begin,
-
-    #[token("cond")]
-    Cond,
-
-    #[token("else")]
-    Else,
-
-    #[token("and")]
-    And,
+    #[token("struct")]
+    Struct,
 
     #[token("if")]
     If,
 
-    #[token("or")]
-    Or,
+    #[token("else")]
+    Else,
 
-    #[token("when")]
-    When,
+    #[token("new")]
+    New,
 
-    #[token("unless")]
-    Unless,
+    #[token("return")]
+    Return,
 
-    #[token("set!")]
-    SetBang,
+    #[token("mut")]
+    Mut,
+
+    #[token("inout")]
+    Inout,
+
+    #[token("()")]
+    Void,
 
     #[token("(")]
     LParen,
 
     #[token(")")]
     RParen,
+
+    #[token("+")]
+    Plus,
+
+    #[token("-")]
+    Minus,
+
+    #[token("*")]
+    Asterisk,
+
+    #[token("/")]
+    ForwardSlash,
+
+    #[token("{")]
+    LBracket,
+
+    #[token("}")]
+    RBracket,
+
+    #[token("->")]
+    RArrow,
+
+    #[token(":")]
+    Colon,
+
+    #[token(";")]
+    Semicolon,
+
+    #[token(",")]
+    Comma,
+
+    #[token("|")]
+    Pipe,
 
     #[regex(r"-?\d[_\d]*", priority = 2)]
     IntLiteral,
@@ -113,19 +140,28 @@ impl Token {
                 }
             }
             Token::Define => "define",
-            Token::Lambda => "lambda",
-            Token::LetStar => "let*",
-            Token::Begin => "begin",
-            Token::Cond => "cond",
-            Token::Else => "else",
-            Token::And => "and",
-            Token::Or => "or",
+            Token::Fn => "fn",
+            Token::Struct => "struct",
             Token::If => "if",
-            Token::When => "when",
-            Token::Unless => "unless",
-            Token::SetBang => "set!",
+            Token::Else => "else",
+            Token::New => "new",
+            Token::Return => "return",
+            Token::Mut => "mut",
+            Token::Inout => "inout",
+            Token::Void => "()",
             Token::LParen => "(",
             Token::RParen => ")",
+            Token::Plus => "+",
+            Token::Minus => "-",
+            Token::Asterisk => "*",
+            Token::ForwardSlash => "/",
+            Token::LBracket => "{",
+            Token::RBracket => "}",
+            Token::RArrow => "->",
+            Token::Colon => ":",
+            Token::Semicolon => ";",
+            Token::Comma => ",",
+            Token::Pipe => "|",
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
             Token::CharLiteral => "<character literal>",
@@ -141,7 +177,7 @@ mod tests {
     #[test]
     fn test_lexer() -> Result<()> {
         let tokens =
-            lex("true false define lambda begin let* set! cond else if when unless and or ( ) 0 foo \"bar\" \'\\0\'")?;
+            lex("true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | 0 -0 foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -149,7 +185,7 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define lambda begin let* set! cond else if when unless and or ( ) <integer literal> <name> <string literal> <character literal>"
+            "true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | <integer literal> <integer literal> <name> <string literal> <character literal>"
         );
         Ok(())
     }
