@@ -92,7 +92,7 @@ pub enum Token {
     #[regex(r#""(?:[^"\\]|\\[\s\S])*""#, priority = 2)]
     StrLiteral,
 
-    #[regex(r"[^\s()]+", priority = 1)]
+    #[regex(r"[A-Za-z_][[:word:]]*", priority = 1)]
     Name,
 }
 
@@ -177,7 +177,7 @@ mod tests {
     #[test]
     fn test_lexer() -> Result<()> {
         let tokens =
-            lex("true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | 0 -0 foo \"bar\" \'\\0\'")?;
+            lex("true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | 0 -0 foo foo9 _ _foo \"bar\" \'\\0\'")?;
         let strs = tokens
             .iter()
             .map(|x| x.token.str())
@@ -185,45 +185,17 @@ mod tests {
             .join(" ");
         assert_eq!(
             strs,
-            "true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | <integer literal> <integer literal> <name> <string literal> <character literal>"
+            "true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | <integer literal> <integer literal> <name> <name> <name> <name> <string literal> <character literal>"
         );
         Ok(())
     }
 
     #[test]
-    fn test_flexible_names() -> Result<()> {
-        let tokens = lex("empty?")?;
-        assert_eq!(
-            vec![TokenSpan {
-                token: Token::Name,
-                span: SourceSpan::new(0.into(), 6),
-            }],
-            tokens
-        );
-        let tokens = lex("🤔")?;
-        assert_eq!(
-            vec![TokenSpan {
-                token: Token::Name,
-                span: SourceSpan::new(0.into(), 4),
-            }],
-            tokens
-        );
-        let tokens = lex("[]")?;
-        assert_eq!(
-            vec![TokenSpan {
-                token: Token::Name,
-                span: SourceSpan::new(0.into(), 2),
-            }],
-            tokens
-        );
-        let tokens = lex(".")?;
-        assert_eq!(
-            vec![TokenSpan {
-                token: Token::Name,
-                span: SourceSpan::new(0.into(), 1),
-            }],
-            tokens
-        );
+    fn test_invalid_tokens() -> Result<()> {
+        let tokens = lex("\"");
+        assert!(tokens.is_err());
+        let tokens = lex("🤔 🤔 🤔");
+        assert!(tokens.is_err());
         Ok(())
     }
 }
