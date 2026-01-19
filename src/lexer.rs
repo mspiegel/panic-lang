@@ -17,8 +17,17 @@ pub enum Token {
     #[token("define")]
     Define,
 
+    #[token("const")]
+    Const,
+
+    #[token("comptime")]
+    Comptime,
+
     #[token("fn")]
     Fn,
+
+    #[token("impl")]
+    Impl,
 
     #[token("struct")]
     Struct,
@@ -35,14 +44,17 @@ pub enum Token {
     #[token("return")]
     Return,
 
+    #[token("yield")]
+    Yield,
+
+    #[token("let")]
+    Let,
+
+    #[token("is")]
+    Is,
+
     #[token("mut")]
     Mut,
-
-    #[token("inout")]
-    Inout,
-
-    #[token("()")]
-    Void,
 
     #[token("(")]
     LParen,
@@ -58,6 +70,9 @@ pub enum Token {
 
     #[token("*")]
     Asterisk,
+
+    #[token("&")]
+    Ampersand,
 
     #[token("/")]
     ForwardSlash,
@@ -80,10 +95,7 @@ pub enum Token {
     #[token(",")]
     Comma,
 
-    #[token("|")]
-    Pipe,
-
-    #[regex(r"-?\d[_\d]*", priority = 2)]
+    #[regex(r"\d[_\d]*", priority = 2)]
     IntLiteral,
 
     #[regex(r#"'(?:[^'\r\n\t\\]|\\r|\\n|\\t|\\\\|\\0|\\'|\\")'"#, priority = 2)]
@@ -140,20 +152,25 @@ impl Token {
                 }
             }
             Token::Define => "define",
+            Token::Const => "const",
+            Token::Comptime => "comptime",
             Token::Fn => "fn",
+            Token::Impl => "impl",
             Token::Struct => "struct",
             Token::If => "if",
             Token::Else => "else",
             Token::New => "new",
             Token::Return => "return",
+            Token::Yield => "yield",
+            Token::Let => "let",
+            Token::Is => "is",
             Token::Mut => "mut",
-            Token::Inout => "inout",
-            Token::Void => "()",
             Token::LParen => "(",
             Token::RParen => ")",
             Token::Plus => "+",
             Token::Minus => "-",
             Token::Asterisk => "*",
+            Token::Ampersand => "&",
             Token::ForwardSlash => "/",
             Token::LBracket => "{",
             Token::RBracket => "}",
@@ -161,7 +178,6 @@ impl Token {
             Token::Colon => ":",
             Token::Semicolon => ";",
             Token::Comma => ",",
-            Token::Pipe => "|",
             Token::IntLiteral => "<integer literal>",
             Token::StrLiteral => "<string literal>",
             Token::CharLiteral => "<character literal>",
@@ -176,16 +192,84 @@ mod tests {
 
     #[test]
     fn test_lexer() -> Result<()> {
-        let tokens =
-            lex("true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | 0 -0 foo foo9 _ _foo \"bar\" \'\\0\'")?;
-        let strs = tokens
-            .iter()
-            .map(|x| x.token.str())
-            .collect::<Vec<&str>>()
-            .join(" ");
+        let tokens = lex("true
+            false
+            define
+            const
+            comptime
+            fn
+            impl
+            struct
+            if
+            else
+            new
+            return
+            yield
+            let
+            is
+            mut
+            (
+            )
+            +
+            -
+            *
+            &
+            /
+            {
+            }
+            ->
+            :
+            ;
+            ,
+            0
+            foo
+            foo9
+            _
+            _foo
+            \"bar\"
+            \'\\0\'
+            ")?;
+        let strs = tokens.iter().map(|x| x.token.str()).collect::<Vec<&str>>();
         assert_eq!(
             strs,
-            "true false define fn struct if else new return mut inout () ( ) + - * / { } -> : ; , | <integer literal> <integer literal> <name> <name> <name> <name> <string literal> <character literal>"
+            vec![
+                "true",
+                "false",
+                "define",
+                "const",
+                "comptime",
+                "fn",
+                "impl",
+                "struct",
+                "if",
+                "else",
+                "new",
+                "return",
+                "yield",
+                "let",
+                "is",
+                "mut",
+                "(",
+                ")",
+                "+",
+                "-",
+                "*",
+                "&",
+                "/",
+                "{",
+                "}",
+                "->",
+                ":",
+                ";",
+                ",",
+                "<integer literal>",
+                "<name>",
+                "<name>",
+                "<name>",
+                "<name>",
+                "<string literal>",
+                "<character literal>",
+            ]
         );
         Ok(())
     }
