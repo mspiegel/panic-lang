@@ -8,8 +8,8 @@ name = "pani"
 path = "src/interpreter/main.rs"
 
 [dependencies]
-logos = {version = "0.15", features = [ "forbid_unsafe" ] }
-miette = { version = "7.5", features = [ "fancy" ] }
+logos = {version = "0.16", features = [ "forbid_unsafe" ] }
+miette = { version = "7.6", features = [ "fancy" ] }
 num-bigint = "0.4"
-ordermap = "0.5"
-thiserror = "1"
+ordermap = "1"
+thiserror = "2"
